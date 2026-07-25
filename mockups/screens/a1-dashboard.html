@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Métricas</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="appbar justify-between">
+      <div><p class="text-[12px] text-muted leading-none mb-1">Panel administrador</p><p class="font-display font-extrabold text-[20px] leading-none">Métricas</p></div>
+      <span class="chip"><i data-lucide="calendar" style="width:14px;height:14px"></i> Junio 2026 <i data-lucide="chevron-down" style="width:14px;height:14px"></i></span>
+    </div>
+
+    <div class="scroll px-5 pb-24 pt-1">
+      <!-- GMV -->
+      <div class="gradient-brand rounded-card p-5 text-white relative overflow-hidden mb-3">
+        <div class="absolute -right-10 -top-12 w-44 h-44 rounded-full bg-white/10"></div>
+        <p class="text-white/85 text-[13px] flex items-center gap-1.5"><i data-lucide="circle-dollar-sign" style="width:16px;height:16px"></i> Volumen transado (GMV)</p>
+        <p class="font-display font-extrabold text-[32px] mt-1">$312.4M</p>
+        <div class="flex items-center gap-2 mt-1.5"><span class="badge bg-white/20 text-white"><i data-lucide="arrow-up-right" style="width:13px;height:13px"></i> 18,2%</span><span class="text-white/80 text-[12.5px]">vs. mayo</span></div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        <div class="card p-4"><span class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center mb-2.5"><i data-lucide="receipt" style="width:18px;height:18px"></i></span><p class="font-display font-extrabold text-[21px] leading-none">1.284</p><p class="text-[12px] text-muted mt-1">Órdenes del mes</p></div>
+        <div class="card p-4"><span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-2.5"><i data-lucide="ticket" style="width:18px;height:18px"></i></span><p class="font-display font-extrabold text-[21px] leading-none">$243K</p><p class="text-[12px] text-muted mt-1">Ticket promedio</p></div>
+        <div class="card p-4"><span class="w-9 h-9 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center mb-2.5"><i data-lucide="factory" style="width:18px;height:18px"></i></span><p class="font-display font-extrabold text-[21px] leading-none">38</p><p class="text-[12px] text-muted mt-1">Proveedores activos</p></div>
+        <div class="card p-4"><span class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mb-2.5"><i data-lucide="store" style="width:18px;height:18px"></i></span><p class="font-display font-extrabold text-[21px] leading-none">412</p><p class="text-[12px] text-muted mt-1">Farmacias activas</p></div>
+      </div>
+
+      <!-- Ventas por proveedor -->
+      <div class="card p-5 mb-5">
+        <div class="flex items-center justify-between mb-4"><p class="font-display font-bold text-[15px]">Ventas por proveedor</p><a class="text-[12.5px] font-semibold text-primary">Ver todos</a></div>
+        <div class="space-y-3.5">
+          <div><div class="flex items-center justify-between text-[13px] mb-1.5"><span class="font-medium flex items-center gap-2"><span class="avatar w-6 h-6 bg-primary text-[10px]">GF</span> Genfar</span><span class="font-semibold">$92.1M</span></div><div class="bar"><span style="width:100%"></span></div></div>
+          <div><div class="flex items-center justify-between text-[13px] mb-1.5"><span class="font-medium flex items-center gap-2"><span class="avatar w-6 h-6 bg-teal-600 text-[10px]">TQ</span> Tecnoquímicas</span><span class="font-semibold">$74.5M</span></div><div class="bar"><span style="width:81%"></span></div></div>
+          <div><div class="flex items-center justify-between text-[13px] mb-1.5"><span class="font-medium flex items-center gap-2"><span class="avatar w-6 h-6 bg-primary-700 text-[10px]">LS</span> La Santé</span><span class="font-semibold">$58.0M</span></div><div class="bar"><span style="width:63%"></span></div></div>
+          <div><div class="flex items-center justify-between text-[13px] mb-1.5"><span class="font-medium flex items-center gap-2"><span class="avatar w-6 h-6 bg-slate-500 text-[10px]">MK</span> MK Lab.</span><span class="font-semibold">$41.3M</span></div><div class="bar"><span style="width:45%"></span></div></div>
+          <div><div class="flex items-center justify-between text-[13px] mb-1.5"><span class="font-medium flex items-center gap-2"><span class="avatar w-6 h-6 bg-amber-600 text-[10px]">BY</span> Bayer</span><span class="font-semibold">$28.9M</span></div><div class="bar"><span style="width:31%"></span></div></div>
+        </div>
+      </div>
+
+      <!-- Top farmacias -->
+      <div class="flex items-center justify-between mb-3"><p class="font-display font-bold text-[15px]">Top farmacias compradoras</p></div>
+      <div class="card divide-y divide-line">
+        <div class="flex items-center gap-3 p-3.5"><span class="font-display font-bold text-[13px] text-muted w-5">1</span><span class="avatar w-9 h-9 bg-teal-600 text-[12px]">RB</span><p class="flex-1 font-medium text-[13.5px]">Drogas La Rebaja</p><span class="font-display font-bold text-[14px]">$24.8M</span></div>
+        <div class="flex items-center gap-3 p-3.5"><span class="font-display font-bold text-[13px] text-muted w-5">2</span><span class="avatar w-9 h-9 bg-primary text-[12px]">CV</span><p class="flex-1 font-medium text-[13.5px]">Cruz Verde</p><span class="font-display font-bold text-[14px]">$19.2M</span></div>
+        <div class="flex items-center gap-3 p-3.5"><span class="font-display font-bold text-[13px] text-muted w-5">3</span><span class="avatar w-9 h-9 bg-primary-700 text-[12px]">FM</span><p class="flex-1 font-medium text-[13.5px]">Farmatodo</p><span class="font-display font-bold text-[14px]">$15.6M</span></div>
+      </div>
+    </div>
+
+    <div class="bottomnav">
+      <div class="navitem active"><i data-lucide="bar-chart-3"></i>Resumen</div>
+      <div class="navitem"><i data-lucide="factory"></i>Proveedores</div>
+      <div class="navitem"><i data-lucide="store"></i>Farmacias</div>
+      <div class="navitem"><i data-lucide="wallet"></i>Ganancias</div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

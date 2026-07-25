@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmacia — Detalle de pedido</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="appbar">
+      <button class="icon-btn"><i data-lucide="arrow-left" style="width:19px;height:19px"></i></button>
+      <div>
+        <p class="text-[12px] text-muted leading-none mb-1">Pedido #OP-1042</p>
+        <p class="font-display font-extrabold text-[18px] leading-none">Detalle del pedido</p>
+      </div>
+    </div>
+
+    <div class="scroll px-5 pb-32 pt-1">
+      <!-- Proveedor + estado -->
+      <div class="card-flat p-3.5 flex items-center gap-3 mb-3">
+        <span class="avatar w-10 h-10 bg-primary text-[13px]">GF</span>
+        <div class="flex-1"><p class="font-semibold text-[14px] leading-none">Genfar S.A.</p><p class="text-[12px] text-muted mt-1">Entrega estimada: mañana</p></div>
+        <span class="badge badge-amber">Parcial</span>
+      </div>
+
+      <!-- Aviso sin stock -->
+      <div class="card p-4 mb-3 border border-amber-100 bg-amber-50">
+        <div class="flex items-start gap-3">
+          <span class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center flex-none"><i data-lucide="alert-triangle" style="width:18px;height:18px"></i></span>
+          <div class="flex-1">
+            <p class="font-semibold text-[13.5px] text-amber-700 leading-tight">1 producto sin stock</p>
+            <p class="text-[12.5px] text-amber-700/90 mt-1">El proveedor no tenía <b>Ibuprofeno 400 mg</b>. Puedes pedirlo a otro proveedor sin rehacer el pedido.</p>
+            <button class="btn btn-primary btn-sm mt-3"><i data-lucide="search" style="width:14px;height:14px"></i> Buscar otro proveedor</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Items -->
+      <p class="font-display font-bold text-[14px] mb-2">Productos del pedido</p>
+      <div class="card divide-y divide-line mb-3">
+        <div class="flex items-center gap-3 p-3.5">
+          <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center flex-none"><i data-lucide="check" style="width:18px;height:18px"></i></span>
+          <div class="flex-1 min-w-0"><p class="font-medium text-[13.5px] truncate">Acetaminofén 500 mg</p><p class="text-[11.5px] text-muted">40 cajas × $8.500</p></div>
+          <div class="text-right"><p class="font-semibold text-[13.5px]">$340.000</p><span class="badge badge-green mt-0.5">Confirmado</span></div>
+        </div>
+        <div class="flex items-center gap-3 p-3.5">
+          <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center flex-none"><i data-lucide="check" style="width:18px;height:18px"></i></span>
+          <div class="flex-1 min-w-0"><p class="font-medium text-[13.5px] truncate">Losartán 50 mg</p><p class="text-[11.5px] text-muted">60 cajas × $9.700</p></div>
+          <div class="text-right"><p class="font-semibold text-[13.5px]">$582.000</p><span class="badge badge-green mt-0.5">Confirmado</span></div>
+        </div>
+        <div class="flex items-center gap-3 p-3.5 bg-danger-50/40">
+          <span class="w-9 h-9 rounded-lg bg-danger-50 text-danger flex items-center justify-center flex-none"><i data-lucide="x" style="width:18px;height:18px"></i></span>
+          <div class="flex-1 min-w-0"><p class="font-medium text-[13.5px] truncate text-soft">Ibuprofeno 400 mg</p><p class="text-[11.5px] text-muted">25 cajas solicitadas</p></div>
+          <div class="text-right"><p class="font-semibold text-[13.5px] text-muted line-through">$310.000</p><span class="badge badge-red mt-0.5">Sin stock</span></div>
+        </div>
+      </div>
+
+      <!-- Totales -->
+      <div class="card p-4">
+        <div class="flex items-center justify-between text-[13px] mb-1.5"><span class="text-muted">Confirmado (2 ítems)</span><span class="font-semibold">$922.000</span></div>
+        <div class="flex items-center justify-between text-[13px] mb-2"><span class="text-muted">No disponible</span><span class="text-muted">−$310.000</span></div>
+        <div class="divider mb-2"></div>
+        <div class="flex items-center justify-between"><span class="font-semibold text-[14px]">Total a pagar</span><span class="font-display font-extrabold text-[20px] text-primary-800">$922.000</span></div>
+      </div>
+    </div>
+
+    <div class="flex-none px-5 py-3.5 bg-white border-t border-line space-y-2.5" style="box-shadow:0 -6px 20px rgba(15,23,42,.05)">
+      <button class="btn btn-primary btn-lg btn-block"><i data-lucide="search" style="width:18px;height:18px"></i> Pedir Ibuprofeno a otro proveedor</button>
+      <button class="btn btn-outline btn-md btn-block">Ver seguimiento de la entrega</button>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmacia — Comparar proveedores</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="appbar">
+      <button class="icon-btn"><i data-lucide="arrow-left" style="width:19px;height:19px"></i></button>
+      <div class="flex-1 min-w-0">
+        <p class="font-display font-extrabold text-[17px] leading-tight truncate">Acetaminofén 500 mg</p>
+        <p class="text-[12px] text-muted">Tableta · Caja x 100</p>
+      </div>
+      <button class="icon-btn"><i data-lucide="info" style="width:18px;height:18px"></i></button>
+    </div>
+
+    <!-- Resumen de mercado -->
+    <div class="px-5">
+      <div class="card p-3.5 flex items-center justify-around mb-3">
+        <div class="text-center"><p class="text-[11px] text-muted">Proveedores</p><p class="font-display font-bold text-[16px]">12</p></div>
+        <div class="w-px h-8 bg-line"></div>
+        <div class="text-center"><p class="text-[11px] text-muted">Más bajo</p><p class="font-display font-bold text-[16px] text-primary-700">$8.500</p></div>
+        <div class="w-px h-8 bg-line"></div>
+        <div class="text-center"><p class="text-[11px] text-muted">Promedio</p><p class="font-display font-bold text-[16px]">$9.640</p></div>
+      </div>
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-[12.5px] text-muted">Ordenado por <b class="text-ink">precio</b></p>
+        <div class="flex gap-2">
+          <span class="chip chip-active"><i data-lucide="arrow-down-narrow-wide" style="width:14px;height:14px"></i> Precio</span>
+          <span class="chip"><i data-lucide="truck" style="width:14px;height:14px"></i> Entrega</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll px-5 pb-28 pt-1 space-y-2.5">
+
+      <!-- MEJOR PRECIO -->
+      <div class="card p-4 ring-2 ring-primary relative overflow-hidden">
+        <span class="absolute top-0 right-0 badge-best rounded-bl-xl rounded-tr-[16px] px-3 py-1.5 text-[11px] font-bold flex items-center gap-1"><i data-lucide="award" style="width:13px;height:13px"></i> MEJOR PRECIO</span>
+        <div class="flex items-center gap-3 mb-3">
+          <span class="avatar w-11 h-11 bg-primary text-[14px]">GF</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-[15px] leading-tight">Genfar S.A.</p>
+            <div class="flex items-center gap-1 text-[12px] text-muted mt-0.5"><i data-lucide="star" class="text-amber-500 fill-amber-400" style="width:13px;height:13px"></i> 4.9 · <i data-lucide="truck" style="width:13px;height:13px"></i> Entrega 24 h</div>
+          </div>
+        </div>
+        <div class="flex items-end justify-between pt-3 border-t border-line">
+          <div>
+            <p class="font-display font-extrabold text-[24px] text-primary-800 leading-none">$8.500</p>
+            <p class="text-[11.5px] text-muted mt-1">por caja · stock 1.200 · mín. 10</p>
+          </div>
+          <button class="btn btn-primary btn-md">Seleccionar</button>
+        </div>
+      </div>
+
+      <div class="card-flat p-4 lift">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="avatar w-11 h-11 bg-teal-600 text-[14px]">TQ</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-[15px] leading-tight">Tecnoquímicas</p>
+            <div class="flex items-center gap-1 text-[12px] text-muted mt-0.5"><i data-lucide="star" class="text-amber-500 fill-amber-400" style="width:13px;height:13px"></i> 4.8 · <i data-lucide="truck" style="width:13px;height:13px"></i> Entrega 24 h</div>
+          </div>
+        </div>
+        <div class="flex items-end justify-between pt-3 border-t border-line">
+          <div>
+            <p class="font-display font-extrabold text-[22px] leading-none">$8.900 <span class="text-[12px] font-medium text-muted">+$400</span></p>
+            <p class="text-[11.5px] text-muted mt-1">por caja · stock 800 · mín. 10</p>
+          </div>
+          <button class="btn btn-outline btn-md">Seleccionar</button>
+        </div>
+      </div>
+
+      <div class="card-flat p-4 lift">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="avatar w-11 h-11 bg-primary-700 text-[14px]">LS</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-[15px] leading-tight">Laboratorios La Santé</p>
+            <div class="flex items-center gap-1 text-[12px] text-muted mt-0.5"><i data-lucide="star" class="text-amber-500 fill-amber-400" style="width:13px;height:13px"></i> 4.6 · <i data-lucide="truck" style="width:13px;height:13px"></i> Entrega 48 h</div>
+          </div>
+        </div>
+        <div class="flex items-end justify-between pt-3 border-t border-line">
+          <div>
+            <p class="font-display font-extrabold text-[22px] leading-none">$9.300 <span class="text-[12px] font-medium text-muted">+$800</span></p>
+            <p class="text-[11.5px] text-muted mt-1">por caja · stock 2.500 · mín. 20</p>
+          </div>
+          <button class="btn btn-outline btn-md">Seleccionar</button>
+        </div>
+      </div>
+
+      <div class="card-flat p-4 lift">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="avatar w-11 h-11 bg-slate-500 text-[14px]">MK</span>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-[15px] leading-tight">MK Laboratorios</p>
+            <div class="flex items-center gap-1 text-[12px] text-muted mt-0.5"><i data-lucide="star" class="text-amber-500 fill-amber-400" style="width:13px;height:13px"></i> 4.5 · <i data-lucide="truck" style="width:13px;height:13px"></i> Entrega 48 h</div>
+          </div>
+        </div>
+        <div class="flex items-end justify-between pt-3 border-t border-line">
+          <div>
+            <p class="font-display font-extrabold text-[22px] leading-none">$9.800 <span class="text-[12px] font-medium text-muted">+$1.300</span></p>
+            <p class="text-[11.5px] text-muted mt-1">por caja · stock 600 · mín. 10</p>
+          </div>
+          <button class="btn btn-outline btn-md">Seleccionar</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

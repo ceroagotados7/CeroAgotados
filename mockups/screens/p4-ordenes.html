@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proveedor — Órdenes</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="appbar justify-between">
+      <p class="font-display font-extrabold text-[20px]">Órdenes de pedido</p>
+      <button class="icon-btn"><i data-lucide="search" style="width:19px;height:19px"></i></button>
+    </div>
+
+    <div class="px-5">
+      <div class="flex gap-2 mb-1 overflow-x-auto no-scrollbar pb-1">
+        <span class="chip chip-active">Pendientes · 7</span>
+        <span class="chip">En preparación · 2</span>
+        <span class="chip">Despachadas</span>
+        <span class="chip">Todas</span>
+      </div>
+    </div>
+
+    <div class="scroll px-5 pb-24 pt-2 space-y-3">
+
+      <!-- Orden destacada pendiente -->
+      <div class="card p-4 border-l-4 border-amber-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2.5"><span class="avatar w-9 h-9 bg-teal-600 text-[12px]">SJ</span><div><p class="font-semibold text-[14px] leading-none">Farmacia San Jorge</p><p class="text-[11.5px] text-muted mt-1">#OP-1042 · hace 12 min</p></div></div>
+          <span class="badge badge-amber">Pendiente</span>
+        </div>
+        <div class="divider mb-3"></div>
+        <div class="space-y-2 mb-3">
+          <div class="flex items-center justify-between text-[13.5px]"><span class="text-soft">Acetaminofén 500 mg <span class="text-muted">× 40 cajas</span></span><span class="font-semibold">$356.000</span></div>
+          <div class="flex items-center justify-between text-[13.5px]"><span class="text-soft">Losartán 50 mg <span class="text-muted">× 60 cajas</span></span><span class="font-semibold">$582.000</span></div>
+          <div class="flex items-center justify-between text-[13.5px]"><span class="text-soft">Ibuprofeno 400 mg <span class="text-muted">× 25 cajas</span></span><span class="font-semibold">$310.000</span></div>
+        </div>
+        <div class="flex items-center justify-between bg-canvas rounded-xl px-3.5 py-2.5 mb-3">
+          <span class="text-[13px] text-muted">Total de la orden</span>
+          <span class="font-display font-extrabold text-[18px] text-primary-800">$1.248.000</span>
+        </div>
+        <div class="flex gap-2.5">
+          <button class="btn btn-outline btn-md flex-1">Rechazar</button>
+          <button class="btn btn-primary btn-md flex-[1.6]"><i data-lucide="check-check" style="width:17px;height:17px"></i> Aceptar y preparar</button>
+        </div>
+      </div>
+
+      <div class="card-flat p-4 lift">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2.5"><span class="avatar w-9 h-9 bg-primary-700 text-[12px]">RB</span><div><p class="font-semibold text-[14px] leading-none">Drogas La Rebaja</p><p class="text-[11.5px] text-muted mt-1">#OP-1041 · hace 1 h</p></div></div>
+          <span class="badge badge-amber">Pendiente</span>
+        </div>
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-line">
+          <span class="text-[12.5px] text-muted">8 productos · 320 cajas</span>
+          <span class="font-display font-bold text-[15px]">$3.980.000</span>
+        </div>
+      </div>
+
+      <div class="card-flat p-4 lift">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2.5"><span class="avatar w-9 h-9 bg-slate-500 text-[12px]">CV</span><div><p class="font-semibold text-[14px] leading-none">Cruz Verde Centro</p><p class="text-[11.5px] text-muted mt-1">#OP-1039 · hoy 8:10 a.m.</p></div></div>
+          <span class="badge badge-teal">En preparación</span>
+        </div>
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-line">
+          <span class="text-[12.5px] text-muted">2 productos · 80 cajas</span>
+          <span class="font-display font-bold text-[15px]">$760.000</span>
+        </div>
+      </div>
+
+      <div class="card-flat p-4 lift opacity-85">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2.5"><span class="avatar w-9 h-9 bg-slate-400 text-[12px]">FM</span><div><p class="font-semibold text-[14px] leading-none">Farmatodo Modelia</p><p class="text-[11.5px] text-muted mt-1">#OP-1038 · ayer</p></div></div>
+          <span class="badge badge-green"><i data-lucide="check" style="width:12px;height:12px"></i> Despachada</span>
+        </div>
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-line">
+          <span class="text-[12.5px] text-muted">5 productos · 150 cajas</span>
+          <span class="font-display font-bold text-[15px]">$2.140.000</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="bottomnav">
+      <div class="navitem"><i data-lucide="layout-dashboard"></i>Inicio</div>
+      <div class="navitem"><i data-lucide="pill"></i>Catálogo</div>
+      <div class="navitem active"><i data-lucide="clipboard-list"></i>Órdenes</div>
+      <div class="navitem"><i data-lucide="user"></i>Cuenta</div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

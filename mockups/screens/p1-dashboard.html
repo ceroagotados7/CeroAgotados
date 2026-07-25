@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proveedor — Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <!-- App bar -->
+    <div class="appbar justify-between">
+      <div class="flex items-center gap-3">
+        <span class="avatar w-11 h-11 bg-primary text-[15px]">GF</span>
+        <div>
+          <p class="text-[12px] text-muted leading-none mb-1">Laboratorio</p>
+          <p class="font-display font-bold text-[16px] leading-none">Genfar S.A.</p>
+        </div>
+      </div>
+      <button class="icon-btn relative"><i data-lucide="bell" style="width:19px;height:19px"></i><span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-danger text-white text-[9px] font-bold flex items-center justify-center">3</span></button>
+    </div>
+
+    <div class="scroll px-5 pb-24">
+      <!-- KPI principal -->
+      <div class="gradient-brand rounded-card p-5 text-white relative overflow-hidden mb-3">
+        <div class="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-white/10"></div>
+        <p class="text-white/85 text-[13px] flex items-center gap-1.5"><i data-lucide="trending-up" style="width:16px;height:16px"></i> Ventas de junio</p>
+        <p class="font-display font-extrabold text-[32px] mt-1">$48.250.000</p>
+        <div class="flex items-center gap-2 mt-1.5">
+          <span class="badge bg-white/20 text-white"><i data-lucide="arrow-up-right" style="width:13px;height:13px"></i> 12,4%</span>
+          <span class="text-white/80 text-[12.5px]">vs. mayo</span>
+        </div>
+      </div>
+
+      <!-- KPIs secundarios -->
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        <div class="card p-4">
+          <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-2.5"><i data-lucide="inbox" style="width:18px;height:18px"></i></span>
+          <p class="font-display font-extrabold text-[22px] leading-none">7</p>
+          <p class="text-[12.5px] text-muted mt-1">Órdenes pendientes</p>
+        </div>
+        <div class="card p-4">
+          <span class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center mb-2.5"><i data-lucide="pill" style="width:18px;height:18px"></i></span>
+          <p class="font-display font-extrabold text-[22px] leading-none">128</p>
+          <p class="text-[12.5px] text-muted mt-1">Medicamentos activos</p>
+        </div>
+      </div>
+
+      <!-- Mini chart -->
+      <div class="card p-5 mb-5">
+        <div class="flex items-center justify-between mb-4">
+          <p class="font-display font-bold text-[15px]">Ventas últimos 7 días</p>
+          <span class="badge badge-green">+8,1%</span>
+        </div>
+        <div class="flex items-end justify-between gap-2 h-28">
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:44%"></div><span class="text-[10px] text-muted">L</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:60%"></div><span class="text-[10px] text-muted">M</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:38%"></div><span class="text-[10px] text-muted">M</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:72%"></div><span class="text-[10px] text-muted">J</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary" style="height:90%"></div><span class="text-[10px] font-semibold text-primary">V</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:55%"></div><span class="text-[10px] text-muted">S</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:30%"></div><span class="text-[10px] text-muted">D</span></div>
+        </div>
+      </div>
+
+      <!-- Órdenes recientes -->
+      <div class="flex items-center justify-between mb-3">
+        <p class="font-display font-bold text-[16px]">Órdenes recientes</p>
+        <a class="text-[13px] font-semibold text-primary">Ver todas</a>
+      </div>
+      <div class="space-y-2.5">
+        <div class="card-flat p-3.5 flex items-center gap-3 lift">
+          <span class="avatar w-10 h-10 bg-teal-600 text-[13px]">SJ</span>
+          <div class="flex-1 min-w-0"><p class="font-semibold text-[14px] truncate">Farmacia San Jorge</p><p class="text-[12px] text-muted">3 productos · #OP-1042</p></div>
+          <div class="text-right"><p class="font-display font-bold text-[14px]">$1.240.000</p><span class="badge badge-amber mt-1">Pendiente</span></div>
+        </div>
+        <div class="card-flat p-3.5 flex items-center gap-3 lift">
+          <span class="avatar w-10 h-10 bg-primary-700 text-[13px]">RB</span>
+          <div class="flex-1 min-w-0"><p class="font-semibold text-[14px] truncate">Drogas La Rebaja</p><p class="text-[12px] text-muted">8 productos · #OP-1041</p></div>
+          <div class="text-right"><p class="font-display font-bold text-[14px]">$3.980.000</p><span class="badge badge-green mt-1">Despachada</span></div>
+        </div>
+        <div class="card-flat p-3.5 flex items-center gap-3 lift">
+          <span class="avatar w-10 h-10 bg-slate-500 text-[13px]">CV</span>
+          <div class="flex-1 min-w-0"><p class="font-semibold text-[14px] truncate">Cruz Verde Centro</p><p class="text-[12px] text-muted">2 productos · #OP-1040</p></div>
+          <div class="text-right"><p class="font-display font-bold text-[14px]">$760.000</p><span class="badge badge-green mt-1">Despachada</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottomnav">
+      <div class="navitem active"><i data-lucide="layout-dashboard"></i>Inicio</div>
+      <div class="navitem"><i data-lucide="pill"></i>Catálogo</div>
+      <div class="navitem"><i data-lucide="clipboard-list"></i>Órdenes</div>
+      <div class="navitem"><i data-lucide="user"></i>Cuenta</div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmacia — Mis pedidos</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="appbar"><p class="font-display font-extrabold text-[20px]">Mis pedidos</p></div>
+
+    <div class="px-5">
+      <div class="flex gap-2 mb-1 overflow-x-auto no-scrollbar pb-1">
+        <span class="chip chip-active">Activos · 3</span>
+        <span class="chip">Entregados</span>
+        <span class="chip">Todos</span>
+      </div>
+    </div>
+
+    <div class="scroll px-5 pb-24 pt-2 space-y-3">
+
+      <!-- Confirmada CON novedad de stock -->
+      <div class="card overflow-hidden border-l-4 border-amber-500">
+        <div class="p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2.5"><span class="avatar w-9 h-9 bg-primary text-[12px]">GF</span><div><p class="font-semibold text-[14px] leading-none">Genfar S.A.</p><p class="text-[11.5px] text-muted mt-1">#OP-1042 · hoy</p></div></div>
+            <div class="flex flex-col items-end gap-1.5">
+              <span class="badge badge-green">Confirmada</span>
+              <span class="badge badge-amber"><i data-lucide="alert-circle" style="width:12px;height:12px"></i> Novedades · 1</span>
+            </div>
+          </div>
+          <!-- Stepper de estado -->
+          <div class="flex items-center mb-3">
+            <div class="flex flex-col items-center"><span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center"><i data-lucide="check" style="width:14px;height:14px"></i></span></div>
+            <div class="flex-1 h-1 bg-primary mx-1 rounded"></div>
+            <div class="flex flex-col items-center"><span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center"><i data-lucide="check" style="width:14px;height:14px"></i></span></div>
+            <div class="flex-1 h-1 bg-line mx-1 rounded"></div>
+            <div class="flex flex-col items-center"><span class="w-6 h-6 rounded-full bg-line text-slate-400 flex items-center justify-center text-[11px] font-bold">3</span></div>
+            <div class="flex-1 h-1 bg-line mx-1 rounded"></div>
+            <div class="flex flex-col items-center"><span class="w-6 h-6 rounded-full bg-line text-slate-400 flex items-center justify-center"><i data-lucide="package-check" style="width:13px;height:13px"></i></span></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-muted mb-3 px-0.5"><span class="text-primary font-semibold">Enviada</span><span class="text-primary font-semibold">Aceptada</span><span>Despacho</span><span>Recibida</span></div>
+          <div class="flex items-center justify-between pt-3 border-t border-line">
+            <span class="text-[12.5px] text-muted">2 de 3 productos · 100 cajas</span>
+            <span class="font-display font-bold text-[15px]">$922.000</span>
+          </div>
+        </div>
+        <!-- Franja de novedad: invita a entrar al pedido -->
+        <button class="w-full flex items-center gap-2.5 px-4 py-3 bg-amber-50 border-t border-amber-100 text-left">
+          <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center flex-none"><i data-lucide="alert-triangle" style="width:16px;height:16px"></i></span>
+          <span class="flex-1 text-[12.5px] text-amber-700 leading-tight"><b>1 producto sin stock.</b> Toca para revisar y pedirlo a otro proveedor.</span>
+          <i data-lucide="chevron-right" class="text-amber-600 flex-none" style="width:18px;height:18px"></i>
+        </button>
+      </div>
+
+      <div class="card-flat p-4 lift">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2.5"><span class="avatar w-9 h-9 bg-teal-600 text-[12px]">TQ</span><div><p class="font-semibold text-[14px] leading-none">Tecnoquímicas</p><p class="text-[11.5px] text-muted mt-1">#OP-1043 · hoy</p></div></div>
+          <span class="badge badge-teal">En despacho</span>
+        </div>
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-line">
+          <span class="text-[12.5px] text-muted">3 productos · 110 cajas</span>
+          <span class="font-display font-bold text-[15px]">$934.000</span>
+        </div>
+      </div>
+
+      <div class="card-flat p-4 lift">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2.5"><span class="avatar w-9 h-9 bg-primary-700 text-[12px]">LS</span><div><p class="font-semibold text-[14px] leading-none">Lab. La Santé</p><p class="text-[11.5px] text-muted mt-1">#OP-1036 · ayer</p></div></div>
+          <span class="badge badge-teal">En despacho</span>
+        </div>
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-line">
+          <span class="text-[12.5px] text-muted">6 productos · 240 cajas</span>
+          <span class="font-display font-bold text-[15px]">$2.310.000</span>
+        </div>
+      </div>
+
+      <div class="card-flat p-4 lift opacity-85">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2.5"><span class="avatar w-9 h-9 bg-slate-500 text-[12px]">MK</span><div><p class="font-semibold text-[14px] leading-none">MK Laboratorios</p><p class="text-[11.5px] text-muted mt-1">#OP-1029 · 18 jun</p></div></div>
+          <span class="badge badge-green"><i data-lucide="check" style="width:12px;height:12px"></i> Recibida</span>
+        </div>
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-line">
+          <span class="text-[12.5px] text-muted">4 productos · 160 cajas</span>
+          <span class="font-display font-bold text-[15px]">$1.480.000</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="bottomnav">
+      <div class="navitem"><i data-lucide="search"></i>Buscar</div>
+      <div class="navitem"><i data-lucide="shopping-cart"></i>Pedido</div>
+      <div class="navitem active"><i data-lucide="package"></i>Mis pedidos</div>
+      <div class="navitem"><i data-lucide="user"></i>Cuenta</div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

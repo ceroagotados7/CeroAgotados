@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cero Agotados — Ingreso</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="scroll">
+      <!-- Hero marca -->
+      <div class="gradient-brand px-6 pt-8 pb-14 text-white relative overflow-hidden">
+        <div class="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-white/10"></div>
+        <div class="absolute right-16 top-24 w-24 h-24 rounded-full bg-white/10"></div>
+        <div class="flex items-center gap-2.5 relative">
+          <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+            <i data-lucide="plus" style="width:22px;height:22px"></i>
+          </div>
+          <span class="font-display font-extrabold text-2xl tracking-tight">Cero Agotados</span>
+        </div>
+        <h1 class="font-display font-extrabold text-[26px] leading-tight mt-7 relative">El mejor precio<br>para tu farmacia.</h1>
+        <p class="text-white/85 text-[14px] mt-2 relative max-w-[260px]">Marketplace farmacéutico B2B. Laboratorios y farmacias, conectados.</p>
+      </div>
+
+      <!-- Card de acceso -->
+      <div class="px-5 -mt-7 relative pb-8">
+        <div class="card p-5">
+          <p class="label">Ingreso según tu rol</p>
+          <div class="grid grid-cols-3 gap-2 mb-5">
+            <button class="rounded-2xl border-2 border-primary bg-primary-50 py-3 flex flex-col items-center gap-1.5">
+              <span class="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center"><i data-lucide="factory" style="width:18px;height:18px"></i></span>
+              <span class="text-[11.5px] font-semibold text-primary-800">Proveedor</span>
+            </button>
+            <button class="rounded-2xl border border-line bg-white py-3 flex flex-col items-center gap-1.5">
+              <span class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center"><i data-lucide="store" style="width:18px;height:18px"></i></span>
+              <span class="text-[11.5px] font-semibold text-muted">Farmacia</span>
+            </button>
+            <button class="rounded-2xl border border-line bg-white py-3 flex flex-col items-center gap-1.5">
+              <span class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center"><i data-lucide="bar-chart-3" style="width:18px;height:18px"></i></span>
+              <span class="text-[11.5px] font-semibold text-muted">Admin</span>
+            </button>
+          </div>
+
+          <label class="label" for="email">Correo corporativo</label>
+          <div class="relative mb-3.5">
+            <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" style="width:18px;height:18px"></i>
+            <input id="email" class="input pl-11" type="email" value="compras@genfar.com" />
+          </div>
+          <label class="label" for="pass">Contraseña</label>
+          <div class="relative mb-2">
+            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" style="width:18px;height:18px"></i>
+            <input id="pass" class="input pl-11 pr-11" type="password" value="123456789" />
+            <i data-lucide="eye" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted cursor-pointer" style="width:18px;height:18px"></i>
+          </div>
+          <div class="text-right mb-4"><a class="text-[12.5px] font-semibold text-primary">¿Olvidaste tu contraseña?</a></div>
+
+          <button class="btn btn-primary btn-lg btn-block">Ingresar <i data-lucide="arrow-right" style="width:18px;height:18px"></i></button>
+        </div>
+        <p class="text-center text-[13px] text-muted mt-5">¿Tu empresa aún no está? <a class="font-semibold text-primary">Solicitar acceso</a></p>
+        <div class="flex items-center justify-center gap-1.5 mt-4 text-muted text-[11.5px]"><i data-lucide="shield-check" style="width:14px;height:14px"></i> Conexión segura · datos cifrados</div>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

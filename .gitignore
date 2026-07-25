@@ -1,0 +1,34 @@
+# ---- Secretos y entorno (NUNCA subir) ----
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# ---- Node / Next.js (frontend) ----
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+
+# ---- Python / uv (backend) ----
+.venv/
+.venv-linux/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ---- Sistema / editor ----
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+
+# ---- Artefactos locales ----
+scratchpad/

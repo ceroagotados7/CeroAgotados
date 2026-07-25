@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmacia — Cantidad</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="appbar">
+      <button class="icon-btn"><i data-lucide="arrow-left" style="width:19px;height:19px"></i></button>
+      <p class="font-display font-extrabold text-[17px]">Cantidad a pedir</p>
+    </div>
+
+    <div class="scroll px-5 pb-28 pt-1">
+      <!-- Producto + proveedor elegido -->
+      <div class="card p-4 mb-4">
+        <div class="flex items-center gap-3">
+          <span class="w-14 h-14 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center flex-none"><i data-lucide="pill" style="width:26px;height:26px"></i></span>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-[15.5px] leading-tight">Acetaminofén 500 mg</p>
+            <p class="text-[12.5px] text-muted mt-0.5">Tableta · Caja x 100</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line">
+          <span class="avatar w-8 h-8 bg-primary text-[11px]">GF</span>
+          <p class="text-[13px] flex-1"><span class="text-muted">Proveedor:</span> <b>Genfar S.A.</b></p>
+          <span class="badge badge-best"><i data-lucide="award" style="width:12px;height:12px"></i> Mejor precio</span>
+        </div>
+      </div>
+
+      <!-- Precio unitario -->
+      <div class="flex items-center justify-between px-1 mb-3">
+        <span class="text-[13.5px] text-muted">Precio por caja</span>
+        <span class="font-display font-bold text-[17px] text-primary-800">$8.500</span>
+      </div>
+
+      <!-- Stepper de cantidad -->
+      <div class="card-flat p-4 mb-3">
+        <label class="label">Cantidad (cajas)</label>
+        <div class="flex items-center gap-4">
+          <button class="w-12 h-12 rounded-xl bg-canvas border border-line flex items-center justify-center text-ink active:scale-95"><i data-lucide="minus" style="width:20px;height:20px"></i></button>
+          <div class="flex-1 text-center">
+            <p class="font-display font-extrabold text-[34px] leading-none">40</p>
+          </div>
+          <button class="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center active:scale-95"><i data-lucide="plus" style="width:20px;height:20px"></i></button>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <span class="chip">+10</span><span class="chip">+50</span><span class="chip">+100</span>
+          <span class="ml-auto text-[12px] text-muted self-center flex items-center gap-1"><i data-lucide="info" style="width:13px;height:13px"></i> Mínimo 10</span>
+        </div>
+      </div>
+
+      <!-- Desglose -->
+      <div class="card p-4">
+        <div class="flex items-center justify-between text-[13.5px] mb-2"><span class="text-muted">40 cajas × $8.500</span><span class="font-semibold">$340.000</span></div>
+        <div class="flex items-center justify-between text-[13.5px] mb-3"><span class="text-muted">IVA (0% medicamentos)</span><span class="font-semibold">$0</span></div>
+        <div class="divider mb-3"></div>
+        <div class="flex items-center justify-between"><span class="font-semibold text-[14px]">Subtotal</span><span class="font-display font-extrabold text-[20px] text-primary-800">$340.000</span></div>
+      </div>
+    </div>
+
+    <!-- Barra fija -->
+    <div class="flex-none px-5 py-3.5 bg-white border-t border-line" style="box-shadow:0 -6px 20px rgba(15,23,42,.05)">
+      <button class="btn btn-primary btn-lg btn-block"><i data-lucide="plus" style="width:19px;height:19px"></i> Agregar al pedido · $340.000</button>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

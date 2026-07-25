@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cero Agotados — Design System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style> body{background:#EEF2F6} .wrap{max-width:920px;margin:0 auto;padding:0 22px} .sw{height:74px;border-radius:14px;display:flex;align-items:flex-end;padding:8px 10px;color:#fff;font-size:11px;font-weight:600} </style>
+</head>
+<body class="font-sans text-ink">
+  <div class="gradient-brand text-white">
+    <div class="wrap py-10">
+      <div class="flex items-center gap-2.5 mb-5"><div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center"><i data-lucide="plus" style="width:20px;height:20px"></i></div><span class="font-display font-extrabold text-xl">Cero Agotados</span></div>
+      <h1 class="font-display font-extrabold text-[32px]">Design System</h1>
+      <p class="text-white/85 mt-2">Salud · confianza · claridad. Mobile-first, accesible (WCAG AA), agradable a la vista.</p>
+    </div>
+  </div>
+
+  <div class="wrap py-10 space-y-8">
+
+    <!-- Colores -->
+    <section class="card p-6">
+      <h2 class="font-display font-bold text-[18px] mb-4">Color</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div><div class="sw" style="background:#059669">#059669</div><p class="text-[12px] text-muted mt-1.5">Primary · marca</p></div>
+        <div><div class="sw" style="background:#047857">#047857</div><p class="text-[12px] text-muted mt-1.5">Primary 700 · hover</p></div>
+        <div><div class="sw" style="background:#0891B2">#0891B2</div><p class="text-[12px] text-muted mt-1.5">Teal · confianza/info</p></div>
+        <div><div class="sw" style="background:#F59E0B">#F59E0B</div><p class="text-[12px] text-muted mt-1.5">Ámbar · atención</p></div>
+        <div><div class="sw" style="background:#DC2626">#DC2626</div><p class="text-[12px] text-muted mt-1.5">Danger</p></div>
+        <div><div class="sw text-ink border border-line" style="background:#ECFDF5">#ECFDF5</div><p class="text-[12px] text-muted mt-1.5">Primary 50 · tinte</p></div>
+        <div><div class="sw text-ink border border-line" style="background:#F4F7FA">#F4F7FA</div><p class="text-[12px] text-muted mt-1.5">Canvas · fondo</p></div>
+        <div><div class="sw" style="background:#0F172A">#0F172A</div><p class="text-[12px] text-muted mt-1.5">Ink · texto</p></div>
+      </div>
+    </section>
+
+    <!-- Tipografía -->
+    <section class="card p-6">
+      <h2 class="font-display font-bold text-[18px] mb-4">Tipografía</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <p class="text-[12px] text-muted mb-2 font-semibold">FIGTREE · Títulos</p>
+          <p class="font-display font-extrabold text-[30px] leading-none">Aa Bb Cc</p>
+          <p class="font-display font-bold text-[20px] mt-3">El mejor precio para tu farmacia</p>
+        </div>
+        <div>
+          <p class="text-[12px] text-muted mb-2 font-semibold">INTER · Cuerpo</p>
+          <p class="text-[15px] leading-relaxed">Tipografía legible y neutral para listas de medicamentos, precios y datos. Mínimo 16px en móvil, line-height 1.5.</p>
+          <div class="flex gap-3 mt-3 text-[13px]"><span class="font-normal">Regular</span><span class="font-medium">Medium</span><span class="font-semibold">Semibold</span><span class="font-bold">Bold</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Botones -->
+    <section class="card p-6">
+      <h2 class="font-display font-bold text-[18px] mb-4">Botones</h2>
+      <div class="flex flex-wrap items-center gap-3">
+        <button class="btn btn-primary btn-lg">Primario</button>
+        <button class="btn btn-teal btn-md">Teal</button>
+        <button class="btn btn-ghost btn-md">Ghost</button>
+        <button class="btn btn-outline btn-md">Outline</button>
+        <button class="btn btn-dark btn-sm">Dark sm</button>
+      </div>
+    </section>
+
+    <!-- Componentes -->
+    <section class="card p-6">
+      <h2 class="font-display font-bold text-[18px] mb-4">Componentes</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <p class="text-[12px] text-muted mb-2 font-semibold">BADGES</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="badge badge-best"><i data-lucide="award" style="width:12px;height:12px"></i> Mejor precio</span>
+            <span class="badge badge-green">Despachada</span>
+            <span class="badge badge-teal">En preparación</span>
+            <span class="badge badge-amber">Pendiente</span>
+            <span class="badge badge-red">Rechazada</span>
+          </div>
+          <p class="text-[12px] text-muted mb-2 font-semibold mt-5">CHIPS</p>
+          <div class="flex flex-wrap gap-2"><span class="chip chip-active">Activos</span><span class="chip">Pausados</span><span class="chip">Analgésicos</span></div>
+        </div>
+        <div>
+          <p class="text-[12px] text-muted mb-2 font-semibold">INPUT / SEARCH</p>
+          <div class="searchbar mb-3"><i data-lucide="search" class="text-primary" style="width:18px;height:18px"></i><input placeholder="Buscar medicamento…"></div>
+          <input class="input" placeholder="Precio por caja">
+          <p class="text-[12px] text-muted mb-2 font-semibold mt-5">BARRA / PROGRESO</p>
+          <div class="bar"><span style="width:72%"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Principios -->
+    <section class="card p-6">
+      <h2 class="font-display font-bold text-[18px] mb-4">Principios de UX</h2>
+      <ul class="space-y-2 text-[14px] text-soft">
+        <li class="flex gap-2"><i data-lucide="check-circle-2" class="text-primary flex-none mt-0.5" style="width:17px;height:17px"></i> Áreas táctiles ≥ 44px, foco visible y contraste AA (4.5:1).</li>
+        <li class="flex gap-2"><i data-lucide="check-circle-2" class="text-primary flex-none mt-0.5" style="width:17px;height:17px"></i> El precio más bajo siempre destacado: jerarquía clara para decidir rápido.</li>
+        <li class="flex gap-2"><i data-lucide="check-circle-2" class="text-primary flex-none mt-0.5" style="width:17px;height:17px"></i> Iconos SVG (Lucide), nunca emojis; transiciones suaves 150–200ms.</li>
+        <li class="flex gap-2"><i data-lucide="check-circle-2" class="text-primary flex-none mt-0.5" style="width:17px;height:17px"></i> Bottom-nav por rol; una orden por proveedor; estados de pedido siempre visibles.</li>
+      </ul>
+    </section>
+
+    <p class="text-center"><a href="index.html" class="btn btn-outline btn-md"><i data-lucide="arrow-left" style="width:17px;height:17px"></i> Volver al overview</a></p>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

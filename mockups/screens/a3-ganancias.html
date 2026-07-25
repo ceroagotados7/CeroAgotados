@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Ganancias y márgenes</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar text-white"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <!-- Header ganancia -->
+    <div class="gradient-brand px-5 pt-1 pb-6 text-white relative overflow-hidden">
+      <div class="absolute -right-10 -top-12 w-44 h-44 rounded-full bg-white/10"></div>
+      <div class="flex items-center justify-between mb-4 relative">
+        <div><p class="text-[12px] text-white/80 leading-none mb-1">Panel administrador</p><p class="font-display font-extrabold text-[20px] leading-none">Ganancias</p></div>
+        <span class="chip bg-white/15 text-white border-white/20"><i data-lucide="calendar" style="width:14px;height:14px"></i> Junio</span>
+      </div>
+      <p class="text-white/85 text-[13px] flex items-center gap-1.5 relative"><i data-lucide="wallet" style="width:16px;height:16px"></i> Ganancia neta de la plataforma</p>
+      <p class="font-display font-extrabold text-[34px] mt-1 relative">$18.74M</p>
+      <div class="flex items-center gap-2 mt-1.5 relative"><span class="badge bg-white/20 text-white"><i data-lucide="arrow-up-right" style="width:13px;height:13px"></i> 21,5%</span><span class="text-white/80 text-[12.5px]">vs. mayo · comisión 6%</span></div>
+    </div>
+
+    <div class="scroll px-5 pb-24 pt-4">
+      <!-- KPIs de margen -->
+      <div class="grid grid-cols-3 gap-2.5 mb-5">
+        <div class="card p-3 text-center"><p class="text-[10.5px] text-muted mb-1">GMV</p><p class="font-display font-extrabold text-[16px]">$312M</p></div>
+        <div class="card p-3 text-center"><p class="text-[10.5px] text-muted mb-1">Comisión prom.</p><p class="font-display font-extrabold text-[16px] text-primary-700">6,0%</p></div>
+        <div class="card p-3 text-center"><p class="text-[10.5px] text-muted mb-1">Margen / orden</p><p class="font-display font-extrabold text-[16px]">$14.6K</p></div>
+      </div>
+
+      <!-- Tendencia de ganancia -->
+      <div class="card p-5 mb-5">
+        <div class="flex items-center justify-between mb-4"><p class="font-display font-bold text-[15px]">Ganancia por mes</p><span class="badge badge-green">+21,5%</span></div>
+        <div class="flex items-end justify-between gap-2 h-24">
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:46%"></div><span class="text-[9.5px] text-muted">Feb</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:58%"></div><span class="text-[9.5px] text-muted">Mar</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:52%"></div><span class="text-[9.5px] text-muted">Abr</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:78%"></div><span class="text-[9.5px] text-muted">May</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary" style="height:100%"></div><span class="text-[9.5px] font-semibold text-primary">Jun</span></div>
+        </div>
+      </div>
+
+      <!-- Margen por producto -->
+      <div class="flex items-center justify-between mb-3"><p class="font-display font-bold text-[15px]">Margen por producto</p><a class="text-[12.5px] font-semibold text-primary">Ver todos</a></div>
+      <div class="card divide-y divide-line mb-5">
+        <div class="p-3.5">
+          <div class="flex items-center justify-between mb-1.5"><span class="font-medium text-[13.5px]">Acetaminofén 500 mg</span><span class="font-display font-bold text-[14px] text-primary-700">$2.94M</span></div>
+          <div class="bar mb-1"><span style="width:100%"></span></div>
+          <p class="text-[11px] text-muted">GMV $49M · comisión 6% · 5.760 cajas</p>
+        </div>
+        <div class="p-3.5">
+          <div class="flex items-center justify-between mb-1.5"><span class="font-medium text-[13.5px]">Amoxicilina 500 mg</span><span class="font-display font-bold text-[14px] text-primary-700">$2.10M</span></div>
+          <div class="bar mb-1"><span style="width:71%"></span></div>
+          <p class="text-[11px] text-muted">GMV $35M · comisión 6% · 2.650 cajas</p>
+        </div>
+        <div class="p-3.5">
+          <div class="flex items-center justify-between mb-1.5"><span class="font-medium text-[13.5px]">Omeprazol 20 mg</span><span class="font-display font-bold text-[14px] text-primary-700">$1.56M</span></div>
+          <div class="bar mb-1"><span style="width:53%"></span></div>
+          <p class="text-[11px] text-muted">GMV $26M · comisión 6% · 3.660 cajas</p>
+        </div>
+      </div>
+
+      <!-- Margen por transacción -->
+      <div class="flex items-center justify-between mb-3"><p class="font-display font-bold text-[15px]">Últimas transacciones</p></div>
+      <div class="card divide-y divide-line">
+        <div class="flex items-center gap-3 p-3.5">
+          <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center flex-none"><i data-lucide="receipt" style="width:17px;height:17px"></i></span>
+          <div class="flex-1 min-w-0"><p class="font-medium text-[13px] truncate">#OP-1042 · San Jorge ← Genfar</p><p class="text-[11px] text-muted">$922.000 · comisión 6%</p></div>
+          <span class="font-display font-bold text-[13.5px] text-primary-700">+$55.320</span>
+        </div>
+        <div class="flex items-center gap-3 p-3.5">
+          <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center flex-none"><i data-lucide="receipt" style="width:17px;height:17px"></i></span>
+          <div class="flex-1 min-w-0"><p class="font-medium text-[13px] truncate">#OP-1041 · La Rebaja ← Genfar</p><p class="text-[11px] text-muted">$3.980.000 · comisión 6%</p></div>
+          <span class="font-display font-bold text-[13.5px] text-primary-700">+$238.800</span>
+        </div>
+        <div class="flex items-center gap-3 p-3.5">
+          <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center flex-none"><i data-lucide="receipt" style="width:17px;height:17px"></i></span>
+          <div class="flex-1 min-w-0"><p class="font-medium text-[13px] truncate">#OP-1043 · San Jorge ← Tecnoq.</p><p class="text-[11px] text-muted">$934.000 · comisión 6%</p></div>
+          <span class="font-display font-bold text-[13.5px] text-primary-700">+$56.040</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottomnav">
+      <div class="navitem"><i data-lucide="bar-chart-3"></i>Resumen</div>
+      <div class="navitem"><i data-lucide="factory"></i>Proveedores</div>
+      <div class="navitem"><i data-lucide="store"></i>Farmacias</div>
+      <div class="navitem active"><i data-lucide="wallet"></i>Ganancias</div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

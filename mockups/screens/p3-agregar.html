@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proveedor — Agregar medicamentos</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="appbar">
+      <button class="icon-btn"><i data-lucide="arrow-left" style="width:19px;height:19px"></i></button>
+      <div>
+        <p class="text-[12px] text-muted leading-none mb-1">Catálogo maestro INVIMA</p>
+        <p class="font-display font-extrabold text-[18px] leading-none">Agregar medicamentos</p>
+      </div>
+    </div>
+
+    <div class="px-5">
+      <div class="searchbar mb-2">
+        <i data-lucide="search" class="text-muted" style="width:18px;height:18px"></i>
+        <input placeholder="Buscar por nombre o principio activo…" value="aceta" />
+      </div>
+      <p class="text-[12px] text-muted mb-2 px-1">Marca lo que vas a ofertar y define <b>presentación, precio y stock</b>.</p>
+    </div>
+
+    <div class="scroll px-5 pb-28">
+      <div class="space-y-2.5">
+
+        <!-- Seleccionado -->
+        <div class="card-flat p-3.5 border-primary bg-primary-50/40">
+          <div class="flex items-start gap-3">
+            <span class="w-6 h-6 rounded-md bg-primary text-white flex items-center justify-center flex-none mt-0.5"><i data-lucide="check" style="width:15px;height:15px"></i></span>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-[14.5px] leading-tight">Acetaminofén 500 mg</p>
+              <div class="flex items-center gap-1.5 mt-2 text-[12px] text-teal-700 bg-teal-50 w-fit px-2 py-1 rounded-lg"><i data-lucide="tag" style="width:13px;height:13px"></i> Más bajo del mercado: <b>$8.500</b></div>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-primary-100 space-y-3">
+            <div>
+              <label class="label">Presentación comercial</label>
+              <div class="grid grid-cols-2 gap-2">
+                <select class="input text-[14px] appearance-none"><option>Tableta</option><option>Cápsula</option><option>Jarabe</option></select>
+                <div class="relative"><input class="input pr-16" value="100" /><span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted text-[12.5px]">und / caja</span></div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="label">Precio (caja)</label>
+                <div class="relative"><span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted font-semibold">$</span><input class="input pl-8 font-semibold" value="8.900" /></div>
+              </div>
+              <div>
+                <label class="label">Stock (cajas)</label>
+                <div class="relative"><i data-lucide="boxes" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted" style="width:16px;height:16px"></i><input class="input pl-9 font-semibold" value="1.200" /></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-flat p-3.5 flex items-start gap-3">
+          <span class="w-6 h-6 rounded-md border-2 border-slate-300 flex-none mt-0.5"></span>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-[14.5px] leading-tight">Acetaminofén 500 mg + Cafeína</p>
+            <p class="text-[12px] text-muted mt-0.5">Tableta · Caja x 50 · 2021M-308</p>
+          </div>
+          <span class="text-[12px] text-muted whitespace-nowrap mt-0.5">desde $11.200</span>
+        </div>
+
+        <div class="card-flat p-3.5 flex items-start gap-3">
+          <span class="w-6 h-6 rounded-md border-2 border-slate-300 flex-none mt-0.5"></span>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-[14.5px] leading-tight">Acetaminofén Jarabe 150 mg/5ml</p>
+            <p class="text-[12px] text-muted mt-0.5">Suspensión · Frasco 90 ml · 2017M-052</p>
+          </div>
+          <span class="text-[12px] text-muted whitespace-nowrap mt-0.5">desde $6.300</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="flex-none px-5 py-3.5 bg-white border-t border-line flex items-center gap-3" style="box-shadow:0 -6px 20px rgba(15,23,42,.05)">
+      <div class="flex-none"><p class="text-[11px] text-muted leading-none mb-1">Seleccionados</p><p class="font-display font-bold text-[16px] leading-none">1</p></div>
+      <button class="btn btn-primary btn-lg flex-1">Agregar a mi catálogo <i data-lucide="arrow-right" style="width:18px;height:18px"></i></button>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

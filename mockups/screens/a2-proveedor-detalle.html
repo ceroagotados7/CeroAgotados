@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Detalle de proveedor</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="appbar">
+      <button class="icon-btn"><i data-lucide="arrow-left" style="width:19px;height:19px"></i></button>
+      <p class="font-display font-extrabold text-[17px]">Detalle de proveedor</p>
+    </div>
+
+    <div class="scroll px-5 pb-24 pt-1">
+      <!-- Cabecera proveedor -->
+      <div class="card p-4 mb-4">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="avatar w-14 h-14 bg-primary text-[18px]">GF</span>
+          <div class="flex-1"><p class="font-display font-bold text-[17px] leading-none">Genfar S.A.</p><p class="text-[12.5px] text-muted mt-1.5 flex items-center gap-1.5"><i data-lucide="badge-check" class="text-primary" style="width:14px;height:14px"></i> Verificado · 128 medicamentos</p></div>
+          <span class="chip"><i data-lucide="calendar" style="width:13px;height:13px"></i> Junio</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="bg-canvas rounded-xl py-2.5"><p class="font-display font-extrabold text-[16px] text-primary-800">$92.1M</p><p class="text-[10.5px] text-muted mt-0.5">Vendido</p></div>
+          <div class="bg-canvas rounded-xl py-2.5"><p class="font-display font-extrabold text-[16px]">214</p><p class="text-[10.5px] text-muted mt-0.5">Órdenes</p></div>
+          <div class="bg-canvas rounded-xl py-2.5"><p class="font-display font-extrabold text-[16px]">63</p><p class="text-[10.5px] text-muted mt-0.5">Farmacias</p></div>
+        </div>
+      </div>
+
+      <!-- Tendencia -->
+      <div class="card p-5 mb-4">
+        <p class="font-display font-bold text-[15px] mb-4">Tendencia de ventas</p>
+        <div class="flex items-end justify-between gap-2 h-24">
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:50%"></div><span class="text-[9.5px] text-muted">Ene</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:62%"></div><span class="text-[9.5px] text-muted">Feb</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:48%"></div><span class="text-[9.5px] text-muted">Mar</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:70%"></div><span class="text-[9.5px] text-muted">Abr</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary-100" style="height:82%"></div><span class="text-[9.5px] text-muted">May</span></div>
+          <div class="flex-1 flex flex-col items-center gap-1.5"><div class="w-full rounded-t-lg bg-primary" style="height:100%"></div><span class="text-[9.5px] font-semibold text-primary">Jun</span></div>
+        </div>
+      </div>
+
+      <!-- Ventas por farmacia -->
+      <div class="flex items-center justify-between mb-3"><p class="font-display font-bold text-[15px]">Ventas por farmacia</p><a class="text-[12.5px] font-semibold text-primary">Exportar</a></div>
+      <div class="card divide-y divide-line">
+        <div class="p-3.5">
+          <div class="flex items-center gap-2.5 mb-2"><span class="avatar w-8 h-8 bg-teal-600 text-[11px]">RB</span><p class="flex-1 font-medium text-[13.5px]">Drogas La Rebaja</p><span class="font-display font-bold text-[14px]">$31.4M</span></div>
+          <div class="bar"><span style="width:100%"></span></div><p class="text-[11px] text-muted mt-1">72 órdenes · 34% del proveedor</p>
+        </div>
+        <div class="p-3.5">
+          <div class="flex items-center gap-2.5 mb-2"><span class="avatar w-8 h-8 bg-primary text-[11px]">CV</span><p class="flex-1 font-medium text-[13.5px]">Cruz Verde</p><span class="font-display font-bold text-[14px]">$24.0M</span></div>
+          <div class="bar"><span style="width:76%"></span></div><p class="text-[11px] text-muted mt-1">58 órdenes · 26% del proveedor</p>
+        </div>
+        <div class="p-3.5">
+          <div class="flex items-center gap-2.5 mb-2"><span class="avatar w-8 h-8 bg-primary-700 text-[11px]">FM</span><p class="flex-1 font-medium text-[13.5px]">Farmatodo</p><span class="font-display font-bold text-[14px]">$18.7M</span></div>
+          <div class="bar"><span style="width:59%"></span></div><p class="text-[11px] text-muted mt-1">41 órdenes · 20% del proveedor</p>
+        </div>
+        <div class="p-3.5">
+          <div class="flex items-center gap-2.5 mb-2"><span class="avatar w-8 h-8 bg-slate-500 text-[11px]">SJ</span><p class="flex-1 font-medium text-[13.5px]">Farmacia San Jorge</p><span class="font-display font-bold text-[14px]">$11.2M</span></div>
+          <div class="bar"><span style="width:36%"></span></div><p class="text-[11px] text-muted mt-1">28 órdenes · 12% del proveedor</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

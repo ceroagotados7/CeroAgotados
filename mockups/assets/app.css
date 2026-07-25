@@ -1,0 +1,120 @@
+/* Cero Agotados — estilos compartidos de los mockups (web app mobile-first) */
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root { color-scheme: light; }
+
+* { -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #0F172A;
+  background: #E9EEF3;
+  margin: 0;
+}
+
+h1,h2,h3,h4,.font-display { font-family: 'Figtree', system-ui, sans-serif; letter-spacing: -0.01em; }
+
+/* ---------- Marco de pantalla (viewport de la web app movil) ---------- */
+.screen {
+  width: 390px;
+  min-height: 800px;
+  margin: 0 auto;
+  background: #F4F7FA;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* En el index, las pantallas viven dentro de iframes; en standalone, centradas con aire */
+body.standalone { display: flex; align-items: flex-start; justify-content: center; padding: 28px 0; min-height: 100vh; }
+body.standalone .screen { border-radius: 36px; box-shadow: 0 30px 70px rgba(15,23,42,.18); border: 1px solid #E6EBF1; overflow: hidden; }
+
+/* ---------- Status bar iOS-like ---------- */
+.statusbar {
+  height: 44px; flex: none;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 22px; font-size: 13px; font-weight: 600; color: #0F172A;
+}
+.statusbar .dots { display: flex; align-items: center; gap: 5px; }
+
+/* ---------- Areas con scroll ---------- */
+.scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.scroll::-webkit-scrollbar { width: 0; height: 0; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-weight: 600; border-radius: 14px; cursor: pointer; border: 1px solid transparent;
+  transition: all .15s ease; white-space: nowrap; user-select: none;
+}
+.btn:active { transform: scale(.97); }
+.btn-lg { height: 52px; padding: 0 22px; font-size: 15.5px; }
+.btn-md { height: 44px; padding: 0 18px; font-size: 14.5px; }
+.btn-sm { height: 36px; padding: 0 14px; font-size: 13.5px; border-radius: 11px; }
+.btn-primary { background: #059669; color: #fff; box-shadow: 0 8px 18px rgba(5,150,105,.26); }
+.btn-primary:hover { background: #047857; }
+.btn-teal { background: #0891B2; color: #fff; }
+.btn-teal:hover { background: #0E7490; }
+.btn-ghost { background: #ECFDF5; color: #047857; }
+.btn-ghost:hover { background: #D1FAE5; }
+.btn-outline { background: #fff; color: #0F172A; border-color: #E6EBF1; }
+.btn-outline:hover { border-color: #CBD5E1; background: #F8FAFC; }
+.btn-dark { background: #0F172A; color: #fff; }
+.btn-block { width: 100%; }
+
+/* ---------- Cards ---------- */
+.card { background: #fff; border-radius: 18px; box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 20px rgba(15,23,42,.05); }
+.card-flat { background: #fff; border-radius: 18px; border: 1px solid #E6EBF1; }
+
+/* ---------- Inputs ---------- */
+.label { font-size: 12.5px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block; }
+.input {
+  width: 100%; height: 48px; border-radius: 12px; border: 1px solid #E2E8F0; background: #fff;
+  padding: 0 14px; font-size: 15px; color: #0F172A; outline: none; transition: all .15s ease;
+}
+.input::placeholder { color: #94A3B8; }
+.input:focus { border-color: #10B981; box-shadow: 0 0 0 3.5px rgba(16,185,129,.16); }
+.searchbar { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; background: #fff; border-radius: 14px; border: 1px solid #E6EBF1; }
+.searchbar input { border: none; outline: none; flex: 1; font-size: 15px; background: transparent; }
+
+/* ---------- Badges / chips ---------- */
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+.badge-green { background: #D1FAE5; color: #047857; }
+.badge-teal  { background: #CFFAFE; color: #0E7490; }
+.badge-amber { background: #FEF3C7; color: #B45309; }
+.badge-red   { background: #FEE2E2; color: #B91C1C; }
+.badge-gray  { background: #EEF2F6; color: #475569; }
+.badge-best  { background: #059669; color: #fff; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 500; background: #fff; border: 1px solid #E6EBF1; color: #334155; white-space: nowrap; cursor: pointer; }
+.chip-active { background: #059669; color: #fff; border-color: #059669; }
+
+/* ---------- Bottom nav ---------- */
+.bottomnav {
+  flex: none; display: flex; justify-content: space-around; align-items: center;
+  height: 68px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  background: rgba(255,255,255,.92); backdrop-filter: blur(12px);
+  border-top: 1px solid #EDF1F5; box-shadow: 0 -4px 20px rgba(15,23,42,.05);
+}
+.navitem { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 600; color: #94A3B8; flex: 1; cursor: pointer; }
+.navitem svg { width: 22px; height: 22px; }
+.navitem.active { color: #059669; }
+
+/* ---------- App bar ---------- */
+.appbar { flex: none; display: flex; align-items: center; gap: 12px; padding: 10px 18px 12px; }
+
+/* ---------- Util ---------- */
+.divider { height: 1px; background: #EDF1F5; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: #fff; border: 1px solid #E6EBF1; cursor: pointer; color: #0F172A; }
+.icon-btn:hover { background: #F8FAFC; }
+.avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; color: #fff; font-family: 'Figtree', sans-serif; }
+.lift { transition: transform .15s ease, box-shadow .15s ease; }
+.lift:hover { transform: translateY(-2px); }
+[data-lucide] { stroke-width: 2; }
+.gradient-brand { background: linear-gradient(135deg, #047857 0%, #059669 48%, #0891B2 130%); }
+.gradient-soft { background: linear-gradient(160deg, #ECFDF5 0%, #F4F7FA 60%); }
+
+/* progress / bars */
+.bar { height: 8px; border-radius: 999px; background: #EEF2F6; overflow: hidden; }
+.bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #10B981, #059669); }

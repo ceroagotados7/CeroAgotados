@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proveedor — Mi catálogo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../assets/theme.js"></script>
+<link rel="stylesheet" href="../assets/app.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="standalone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:20px;height:20px"></i></span></div>
+
+    <div class="appbar justify-between">
+      <div>
+        <p class="text-[12px] text-muted leading-none mb-1">Genfar S.A.</p>
+        <p class="font-display font-extrabold text-[20px] leading-none">Mi catálogo</p>
+      </div>
+      <button class="icon-btn"><i data-lucide="sliders-horizontal" style="width:19px;height:19px"></i></button>
+    </div>
+
+    <div class="px-5">
+      <div class="searchbar mb-3">
+        <i data-lucide="search" class="text-muted" style="width:18px;height:18px"></i>
+        <input placeholder="Buscar en mis medicamentos…" />
+      </div>
+      <!-- Acciones: carga masiva + manual -->
+      <div class="grid grid-cols-2 gap-2.5 mb-3">
+        <button class="btn btn-ghost btn-md"><i data-lucide="upload-cloud" style="width:17px;height:17px"></i> Cargar archivo</button>
+        <button class="btn btn-outline btn-md"><i data-lucide="plus" style="width:17px;height:17px"></i> Agregar manual</button>
+      </div>
+      <div class="flex gap-2 mb-1 overflow-x-auto no-scrollbar pb-1">
+        <span class="chip chip-active">Todos · 134</span>
+        <span class="chip">Activos · 128</span>
+        <span class="chip badge-amber !text-[13px] !font-medium">Agotados · 3</span>
+        <span class="chip">Pausados · 6</span>
+      </div>
+    </div>
+
+    <div class="scroll px-5 pb-28 pt-2">
+      <div class="space-y-2.5">
+
+        <div class="card p-3.5">
+          <div class="flex items-start gap-3">
+            <span class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center flex-none"><i data-lucide="pill" style="width:20px;height:20px"></i></span>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-[14.5px] leading-tight">Acetaminofén 500 mg</p>
+              <p class="text-[12px] text-muted mt-0.5">Tableta · Caja x 100 · Reg. 2019M-001</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer flex-none">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-10 h-6 bg-slate-200 rounded-full peer-checked:bg-primary transition relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-5 after:h-5 after:rounded-full after:transition peer-checked:after:translate-x-4"></div>
+            </label>
+          </div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-line">
+            <div><p class="text-[10.5px] text-muted leading-none mb-1">Precio</p><p class="font-display font-bold text-[15px] text-primary-800">$8.900</p></div>
+            <div><p class="text-[10.5px] text-muted leading-none mb-1">Stock</p><p class="font-display font-bold text-[15px]">1.200 <span class="text-[10.5px] font-medium text-muted">cajas</span></p></div>
+            <button class="btn btn-ghost btn-sm ml-auto"><i data-lucide="pencil" style="width:14px;height:14px"></i> Editar</button>
+          </div>
+        </div>
+
+        <!-- Stock bajo -->
+        <div class="card p-3.5">
+          <div class="flex items-start gap-3">
+            <span class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center flex-none"><i data-lucide="pill" style="width:20px;height:20px"></i></span>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-[14.5px] leading-tight">Ibuprofeno 400 mg</p>
+              <p class="text-[12px] text-muted mt-0.5">Tableta · Caja x 50 · Reg. 2018M-114</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer flex-none">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-10 h-6 bg-slate-200 rounded-full peer-checked:bg-primary transition relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-5 after:h-5 after:rounded-full after:transition peer-checked:after:translate-x-4"></div>
+            </label>
+          </div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-line">
+            <div><p class="text-[10.5px] text-muted leading-none mb-1">Precio</p><p class="font-display font-bold text-[15px] text-primary-800">$12.400</p></div>
+            <div><p class="text-[10.5px] text-muted leading-none mb-1">Stock</p><p class="font-display font-bold text-[15px] text-amber-600 flex items-center gap-1">35 <i data-lucide="alert-triangle" style="width:13px;height:13px"></i></p></div>
+            <button class="btn btn-ghost btn-sm ml-auto"><i data-lucide="pencil" style="width:14px;height:14px"></i> Editar</button>
+          </div>
+        </div>
+
+        <!-- AGOTADO -->
+        <div class="card p-3.5 border border-danger-100">
+          <div class="flex items-start gap-3">
+            <span class="w-11 h-11 rounded-xl bg-danger-50 text-danger flex items-center justify-center flex-none"><i data-lucide="pill" style="width:20px;height:20px"></i></span>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-[14.5px] leading-tight">Amoxicilina 500 mg</p>
+              <p class="text-[12px] text-muted mt-0.5">Cápsula · Caja x 30 · Reg. 2019M-302</p>
+            </div>
+            <span class="badge badge-red flex-none"><i data-lucide="x-circle" style="width:12px;height:12px"></i> Agotado</span>
+          </div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-line">
+            <div><p class="text-[10.5px] text-muted leading-none mb-1">Precio</p><p class="font-display font-bold text-[15px]">$15.800</p></div>
+            <div><p class="text-[10.5px] text-muted leading-none mb-1">Stock</p><p class="font-display font-bold text-[15px] text-danger">0</p></div>
+            <button class="btn btn-primary btn-sm ml-auto"><i data-lucide="plus" style="width:14px;height:14px"></i> Reponer stock</button>
+          </div>
+        </div>
+
+        <div class="card p-3.5">
+          <div class="flex items-start gap-3">
+            <span class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center flex-none"><i data-lucide="pill" style="width:20px;height:20px"></i></span>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold text-[14.5px] leading-tight">Losartán 50 mg</p>
+              <p class="text-[12px] text-muted mt-0.5">Tableta · Caja x 30 · Reg. 2020M-220</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer flex-none">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-10 h-6 bg-slate-200 rounded-full peer-checked:bg-primary transition relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-5 after:h-5 after:rounded-full after:transition peer-checked:after:translate-x-4"></div>
+            </label>
+          </div>
+          <div class="flex items-center gap-4 mt-3 pt-3 border-t border-line">
+            <div><p class="text-[10.5px] text-muted leading-none mb-1">Precio</p><p class="font-display font-bold text-[15px] text-primary-800">$9.700</p></div>
+            <div><p class="text-[10.5px] text-muted leading-none mb-1">Stock</p><p class="font-display font-bold text-[15px]">860 <span class="text-[10.5px] font-medium text-muted">cajas</span></p></div>
+            <button class="btn btn-ghost btn-sm ml-auto"><i data-lucide="pencil" style="width:14px;height:14px"></i> Editar</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="bottomnav">
+      <div class="navitem"><i data-lucide="layout-dashboard"></i>Inicio</div>
+      <div class="navitem active"><i data-lucide="pill"></i>Catálogo</div>
+      <div class="navitem"><i data-lucide="clipboard-list"></i>Órdenes</div>
+      <div class="navitem"><i data-lucide="user"></i>Cuenta</div>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

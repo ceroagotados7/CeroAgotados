@@ -1,0 +1,391 @@
+@import "tailwindcss";
+
+/*
+  Design system Cero Agotados — fuente autoritativa: Claude Design.
+  Tokens (theme.js) + capa de componentes (assets/app.css) portados 1:1,
+  pero como web app RESPONSIVE real: sin marco fijo de 390px ni barra de
+  estado falsa. Las proporciones del diseño se adaptan a cualquier pantalla.
+  Paleta verde/teal · Figtree + Inter · WCAG AA.
+*/
+@theme {
+  /* Tipografía (Figtree títulos / Inter cuerpo, vía next/font) */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+
+  /* Marca — verde salud */
+  --color-primary: #059669;
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-500: #10b981;
+  --color-primary-600: #059669;
+  --color-primary-700: #047857;
+  --color-primary-800: #065f46;
+  --color-primary-900: #064e3b;
+
+  /* Teal — confianza / info */
+  --color-teal: #0891b2;
+  --color-teal-50: #ecfeff;
+  --color-teal-100: #cffafe;
+  --color-teal-500: #06b6d4;
+  --color-teal-600: #0891b2;
+  --color-teal-700: #0e7490;
+
+  /* Ámbar — atención */
+  --color-amber: #f59e0b;
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-600: #d97706;
+
+  /* Danger */
+  --color-danger: #dc2626;
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+
+  /* Superficies y texto */
+  --color-ink: #0f172a;
+  --color-soft: #334155;
+  --color-muted: #64748b;
+  --color-line: #e6ebf1;
+  --color-canvas: #f4f7fa;
+  --color-surface: #ffffff;
+
+  /* Radios */
+  --radius-card: 18px;
+}
+
+/* ---------------- Base ---------------- */
+html {
+  /* Base 16px mínima en móvil según el design system. */
+  font-size: 16px;
+}
+body {
+  line-height: 1.5;
+}
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Transiciones suaves por defecto (150–200ms) — principio de UX pactado. */
+@media (prefers-reduced-motion: no-preference) {
+  a,
+  button {
+    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-duration: 180ms;
+    transition-timing-function: ease;
+  }
+}
+
+/* Ocultar scrollbars en carruseles de chips (mantiene el gesto táctil). */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ---------------- Componentes (portados de assets/app.css) ---------------- */
+@layer components {
+  /* Botones */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 600;
+    border-radius: 14px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3.5px rgba(5, 150, 105, 0.35);
+  }
+  .btn-lg {
+    height: 52px;
+    padding: 0 22px;
+    font-size: 15.5px;
+  }
+  .btn-md {
+    height: 44px;
+    padding: 0 18px;
+    font-size: 14.5px;
+  }
+  .btn-sm {
+    height: 36px;
+    padding: 0 14px;
+    font-size: 13.5px;
+    border-radius: 11px;
+  }
+  .btn-primary {
+    background: #059669;
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(5, 150, 105, 0.26);
+  }
+  .btn-primary:hover {
+    background: #047857;
+  }
+  .btn-teal {
+    background: #0891b2;
+    color: #fff;
+  }
+  .btn-teal:hover {
+    background: #0e7490;
+  }
+  .btn-ghost {
+    background: #ecfdf5;
+    color: #047857;
+  }
+  .btn-ghost:hover {
+    background: #d1fae5;
+  }
+  .btn-outline {
+    background: #fff;
+    color: #0f172a;
+    border-color: #e6ebf1;
+  }
+  .btn-outline:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+  }
+  .btn-dark {
+    background: #0f172a;
+    color: #fff;
+  }
+  .btn-block {
+    width: 100%;
+  }
+
+  /* Cards */
+  .card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 6px 20px rgba(15, 23, 42, 0.05);
+  }
+  .card-flat {
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid #e6ebf1;
+  }
+
+  /* Inputs */
+  .label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .input {
+    width: 100%;
+    height: 48px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    padding: 0 14px;
+    font-size: 15px;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.15s ease;
+  }
+  .input::placeholder {
+    color: #94a3b8;
+  }
+  .input:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3.5px rgba(16, 185, 129, 0.16);
+  }
+  .searchbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px;
+    padding: 0 14px;
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid #e6ebf1;
+  }
+  .searchbar input {
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 15px;
+    background: transparent;
+    min-width: 0;
+  }
+
+  /* Badges / chips */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge-green {
+    background: #d1fae5;
+    color: #047857;
+  }
+  .badge-teal {
+    background: #cffafe;
+    color: #0e7490;
+  }
+  .badge-amber {
+    background: #fef3c7;
+    color: #b45309;
+  }
+  .badge-red {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+  .badge-gray {
+    background: #eef2f6;
+    color: #475569;
+  }
+  .badge-best {
+    background: #059669;
+    color: #fff;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    background: #fff;
+    border: 1px solid #e6ebf1;
+    color: #334155;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .chip-active {
+    background: #059669;
+    color: #fff;
+    border-color: #059669;
+  }
+
+  /* App bar */
+  .appbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px 12px;
+  }
+
+  /* Bottom nav */
+  .bottomnav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 68px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid #edf1f5;
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.05);
+  }
+  .navitem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #94a3b8;
+    flex: 1;
+    cursor: pointer;
+  }
+  .navitem svg {
+    width: 22px;
+    height: 22px;
+  }
+  .navitem.active {
+    color: #059669;
+  }
+
+  /* Utilidades del diseño */
+  .divider {
+    height: 1px;
+    background: #edf1f5;
+  }
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #e6ebf1;
+    cursor: pointer;
+    color: #0f172a;
+  }
+  .icon-btn:hover {
+    background: #f8fafc;
+  }
+  .avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    color: #fff;
+    font-family: var(--font-display);
+  }
+  .lift {
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+  .lift:hover {
+    transform: translateY(-2px);
+  }
+  .gradient-brand {
+    background: linear-gradient(135deg, #047857 0%, #059669 48%, #0891b2 130%);
+  }
+  .gradient-soft {
+    background: linear-gradient(160deg, #ecfdf5 0%, #f4f7fa 60%);
+  }
+
+  /* Barra de progreso */
+  .bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #eef2f6;
+    overflow: hidden;
+  }
+  .bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #10b981, #059669);
+  }
+}
