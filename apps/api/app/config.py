@@ -18,13 +18,15 @@ class Settings(BaseSettings):
     # Secreto para endpoints de administración (patrón heredado de prontto).
     admin_secret: str = "dev-admin-secret"
 
-    # CORS: orígenes permitidos. Incluye los puertos de dev habituales de Next
-    # (3000 y el 3001 de fallback cuando 3000 está ocupado).
+    # CORS: orígenes permitidos. Dev local (3000/3001) + dominio de producción.
+    # Los previews de Vercel (*.vercel.app) se permiten por regex en main.py.
     cors_origins: list[str] = [
         "http://localhost:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
+        "https://ceroagotados.com",
+        "https://www.ceroagotados.com",
     ]
 
     environment: str = "local"
