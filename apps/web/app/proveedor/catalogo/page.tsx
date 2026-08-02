@@ -1,18 +1,25 @@
 "use client";
 
-import { AlertTriangle, Package, Pencil, Pill, Plus, SlidersHorizontal, UploadCloud, XCircle } from "lucide-react";
+import { AlertTriangle, Package, PauseCircle, Pencil, Pill, Plus, SlidersHorizontal, Trash2, UploadCloud, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppBar } from "@/components/shell";
 import { Badge, Button, Card, Chip, EmptyState, IconButton, Input, SearchBar, Spinner, Toggle } from "@/components/ui";
-import { api } from "@/lib/api";
+import { api, ApiCallError } from "@/lib/api";
 import { cop } from "@/lib/format";
 import { useMe } from "@/lib/me";
 import type { Oferta } from "@/lib/types";
 
 type Filtro = "todos" | "activos" | "agotados" | "pausados";
 const STOCK_BAJO = 50;
+
+// Prioridad de orden: activos (0) arriba, agotados (1) en medio, pausados (2) al fondo.
+function rankEstado(o: Oferta): number {
+  if (!o.activo) return 2;
+  if (o.stock_disponible === 0) return 1;
+  return 0;
+}
 
 export default function CatalogoPage() {
   const me = useMe();
@@ -47,7 +54,7 @@ export default function CatalogoPage() {
   const visibles = useMemo(() => {
     const list = ofertas ?? [];
     const term = q.trim().toLowerCase();
-    return list.filter((o) => {
+    const filtrados = list.filter((o) => {
       const matchQ = !term || (o.producto?.nombre ?? "").toLowerCase().includes(term);
       const matchF =
         filtro === "todos" ||
@@ -56,12 +63,9 @@ export default function CatalogoPage() {
         (filtro === "pausados" && !o.activo);
       return matchQ && matchF;
     });
+    // Orden por estado: activos arriba, agotados en medio, pausados al fondo (feedback fundador).
+    return filtrados.sort((a, b) => rankEstado(a) - rankEstado(b));
   }, [ofertas, q, filtro]);
-
-  // Actualiza una oferta en memoria tras un cambio (toggle/edición).
-  function patchLocal(id: string, cambios: Partial<Oferta>) {
-    setOfertas((prev) => prev?.map((o) => (o.id === id ? { ...o, ...cambios } : o)) ?? prev);
-  }
 
   return (
     <>
@@ -110,20 +114,42 @@ export default function CatalogoPage() {
       <div className="px-5 pb-28 pt-2">
         {!ofertas ? (
           <Spinner />
+        ) : ofertas.length === 0 ? (
+          // Onboarding: proveedor nuevo, catálogo vacío.
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+              <Package size={30} />
+            </span>
+            <div>
+              <p className="font-display text-[17px] font-bold leading-tight">Empieza tu catálogo</p>
+              <p className="mx-auto mt-1 max-w-[16rem] text-[13px] text-muted">
+                Elige medicamentos del catálogo maestro y fíjales precio y stock. En segundos apareces en la
+                comparación de las farmacias.
+              </p>
+            </div>
+            <div className="mt-1 grid w-full max-w-xs grid-cols-1 gap-2.5">
+              <Link href="/proveedor/agregar">
+                <Button variant="primary" size="lg" block>
+                  <Plus size={18} /> Agregar mi primer medicamento
+                </Button>
+              </Link>
+              <Link href="/proveedor/carga-masiva">
+                <Button variant="ghost" size="md" block>
+                  <UploadCloud size={17} /> Cargar por archivo
+                </Button>
+              </Link>
+            </div>
+          </div>
         ) : visibles.length === 0 ? (
           <EmptyState
             icon={<Package size={32} />}
-            title={ofertas.length === 0 ? "Aún no ofreces productos" : "Sin resultados"}
-            hint={
-              ofertas.length === 0
-                ? "Agrega un medicamento del catálogo y fija su precio."
-                : "Prueba con otro filtro o búsqueda."
-            }
+            title="Sin resultados"
+            hint="Prueba con otro filtro o búsqueda."
           />
         ) : (
           <div className="space-y-2.5">
             {visibles.map((o) => (
-              <OfertaCard key={o.id} oferta={o} onPatch={patchLocal} onReload={load} />
+              <OfertaCard key={o.id} oferta={o} onReload={load} />
             ))}
           </div>
         )}
@@ -132,31 +158,11 @@ export default function CatalogoPage() {
   );
 }
 
-function OfertaCard({
-  oferta,
-  onPatch,
-  onReload,
-}: {
-  oferta: Oferta;
-  onPatch: (id: string, cambios: Partial<Oferta>) => void;
-  onReload: () => Promise<void>;
-}) {
+function OfertaCard({ oferta, onReload }: { oferta: Oferta; onReload: () => Promise<void> }) {
   const [editing, setEditing] = useState(false);
-  const [toggling, setToggling] = useState(false);
   const agotado = oferta.stock_disponible === 0;
+  const pausado = !oferta.activo;
   const bajo = oferta.stock_disponible > 0 && oferta.stock_disponible < STOCK_BAJO;
-
-  async function toggleActivo(next: boolean) {
-    setToggling(true);
-    onPatch(oferta.id, { activo: next }); // optimista
-    try {
-      await api.patch(`/ofertas/${oferta.id}`, { activo: next });
-    } catch {
-      onPatch(oferta.id, { activo: !next }); // revertir
-    } finally {
-      setToggling(false);
-    }
-  }
 
   if (editing) {
     return (
@@ -172,11 +178,11 @@ function OfertaCard({
   }
 
   return (
-    <Card className={`p-3.5 ${agotado ? "border border-danger-100" : ""}`}>
+    <Card className={`p-3.5 ${agotado ? "border border-danger-100" : ""} ${pausado ? "opacity-75" : ""}`}>
       <div className="flex items-start gap-3">
         <span
           className={`flex h-11 w-11 flex-none items-center justify-center rounded-xl ${
-            agotado ? "bg-danger-50 text-danger" : "bg-primary-50 text-primary-700"
+            agotado ? "bg-danger-50 text-danger" : pausado ? "bg-slate-100 text-muted" : "bg-primary-50 text-primary-700"
           }`}
         >
           <Pill size={20} />
@@ -187,14 +193,19 @@ function OfertaCard({
             {[oferta.producto?.forma_farmaceutica, oferta.producto?.presentacion].filter(Boolean).join(" · ")}
           </p>
         </div>
-        {agotado ? (
+        {/* El estado ya no se cambia aquí (era un toggle): se muestra como badge y se edita en "Editar". */}
+        {pausado ? (
+          <Badge tone="gray" className="flex-none">
+            <PauseCircle size={12} /> Pausado
+          </Badge>
+        ) : agotado ? (
           <Badge tone="red" className="flex-none">
             <XCircle size={12} /> Agotado
           </Badge>
         ) : (
-          <div className={toggling ? "pointer-events-none opacity-60" : ""}>
-            <Toggle checked={oferta.activo} onChange={toggleActivo} label="Activo" />
-          </div>
+          <Badge tone="green" className="flex-none">
+            Activo
+          </Badge>
         )}
       </div>
 
@@ -240,18 +251,45 @@ function EditCard({
 }) {
   const [precio, setPrecio] = useState(String(oferta.precio));
   const [stock, setStock] = useState(String(oferta.stock_disponible));
+  const [activo, setActivo] = useState(oferta.activo);
   const [saving, setSaving] = useState(false);
+  const [confirmar, setConfirmar] = useState(false);
+  const [sacando, setSacando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function save() {
     setSaving(true);
+    setError(null);
     try {
       await api.patch(`/ofertas/${oferta.id}`, {
         precio: Number(precio),
         stock_disponible: Number(stock),
+        activo,
       });
       onDone();
-    } finally {
+    } catch (e) {
+      setError(e instanceof ApiCallError ? e.message : "No se pudo guardar.");
       setSaving(false);
+    }
+  }
+
+  async function sacar() {
+    setSacando(true);
+    setError(null);
+    try {
+      await api.del(`/ofertas/${oferta.id}`);
+      onDone();
+    } catch (e) {
+      // Una oferta con historial de órdenes no se puede borrar: solo pausar.
+      const msg =
+        e instanceof ApiCallError && e.code === "oferta_en_orden"
+          ? "Tiene órdenes asociadas: no se puede sacar, solo pausar (desactiva la oferta arriba)."
+          : e instanceof ApiCallError
+            ? e.message
+            : "No se pudo sacar del catálogo.";
+      setError(msg);
+      setSacando(false);
+      setConfirmar(false);
     }
   }
 
@@ -271,6 +309,16 @@ function EditCard({
           <Input type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="font-semibold" />
         </div>
       </div>
+
+      {/* Activar / pausar la oferta (antes era un toggle en la card). */}
+      <div className="mt-3 flex items-center justify-between rounded-xl bg-canvas px-3.5 py-2.5">
+        <div>
+          <p className="text-[13.5px] font-semibold leading-tight">Oferta activa</p>
+          <p className="text-[11.5px] text-muted">{activo ? "Visible para las farmacias" : "Pausada, no aparece en la comparación"}</p>
+        </div>
+        <Toggle checked={activo} onChange={setActivo} label="Oferta activa" />
+      </div>
+
       <div className="mt-3 flex gap-2">
         <Button variant="outline" size="sm" onClick={onCancel} className="flex-1">
           Cancelar
@@ -279,6 +327,33 @@ function EditCard({
           {saving ? "Guardando…" : "Guardar"}
         </Button>
       </div>
+
+      {/* Sacar del catálogo (DELETE) con confirmación inline, sin diálogos nativos. */}
+      <div className="mt-3 border-t border-line pt-3">
+        {!confirmar ? (
+          <button
+            type="button"
+            onClick={() => setConfirmar(true)}
+            className="flex w-full items-center justify-center gap-1.5 text-[13px] font-semibold text-danger"
+          >
+            <Trash2 size={15} /> Sacar del catálogo
+          </button>
+        ) : (
+          <div className="rounded-xl bg-danger-50 p-3 text-center">
+            <p className="mb-2 text-[13px] font-medium text-danger">¿Sacar este medicamento de tu catálogo?</p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setConfirmar(false)} className="flex-1" disabled={sacando}>
+                No
+              </Button>
+              <Button variant="dark" size="sm" onClick={sacar} className="flex-1" disabled={sacando}>
+                {sacando ? "Sacando…" : "Sí, sacar"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {error && <p className="mt-2 text-center text-[12.5px] text-danger">{error}</p>}
     </Card>
   );
 }

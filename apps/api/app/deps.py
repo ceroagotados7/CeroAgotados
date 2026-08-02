@@ -32,8 +32,9 @@ def get_current_user_id(
 ) -> str:
     """Verifica el JWT de Supabase Auth y devuelve el user_id.
 
-    Soporta HS256 (secreto compartido, típico en local) y ES256/RS256
-    (llaves de firma asimétricas del proyecto en la nube, vía JWKS).
+    En la nube el proyecto firma con llaves asimétricas (ES256/RS256 vía JWKS)
+    y HS256 queda rechazado: aceptarlo permitiría forjar tokens con un secreto
+    filtrado. HS256 (secreto compartido) solo se admite en entorno local.
     """
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "token_ausente")
@@ -42,6 +43,8 @@ def get_current_user_id(
         header = jwt.get_unverified_header(token)
         alg = header.get("alg", "HS256")
         if alg == "HS256":
+            if settings.environment != "local":
+                raise HTTPException(status.HTTP_401_UNAUTHORIZED, "token_alg_no_permitido")
             key: object = settings.supabase_jwt_secret
         else:
             key = _jwk_for(header.get("kid"))

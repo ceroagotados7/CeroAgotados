@@ -1,4 +1,9 @@
+import os
 import time
+
+# Los tests acuñan JWT HS256; en modo cloud la API solo acepta ES256/RS256 (JWKS),
+# así que forzamos entorno local ANTES de importar la config (env var > .env).
+os.environ["ENVIRONMENT"] = "local"
 
 import pytest
 from fastapi.testclient import TestClient

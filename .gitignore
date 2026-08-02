@@ -32,3 +32,6 @@ Thumbs.db
 
 # ---- Artefactos locales ----
 scratchpad/
+# ngrok y binarios de túnel de demo (no versionar)
+tools/
+.tools/

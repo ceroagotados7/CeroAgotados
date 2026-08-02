@@ -42,3 +42,7 @@ class OfertaBulkResult(BaseModel):
     procesadas: int
     creadas_o_actualizadas: int
     errores: list[str]
+
+
+class OfertaEliminada(BaseModel):
+    id: str

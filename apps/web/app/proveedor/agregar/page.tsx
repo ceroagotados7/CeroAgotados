@@ -167,9 +167,6 @@ export default function AgregarPage() {
                       {[presentacion, p.laboratorio].filter(Boolean).join(" · ")}
                     </p>
                   </div>
-                  {p.precio_min_mercado != null && (
-                    <span className="mt-0.5 whitespace-nowrap text-[12px] text-muted">desde {cop(p.precio_min_mercado)}</span>
-                  )}
                 </button>
               );
             })}

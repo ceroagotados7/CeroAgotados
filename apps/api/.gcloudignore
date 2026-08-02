@@ -1,0 +1,13 @@
+# Qué NO subir a Cloud Build en el deploy por fuente (espejo de .dockerignore).
+.venv/
+.venv-linux/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+tests/
+.env
+.env.*
+!.env.example
+.git/

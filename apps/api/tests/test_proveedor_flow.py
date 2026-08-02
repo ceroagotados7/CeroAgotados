@@ -280,3 +280,54 @@ def test_farmacia_no_es_proveedor(client, headers_farmacia1):
     """Un usuario de farmacia no puede usar endpoints de proveedor."""
     r = client.get("/v1/ofertas/", headers=headers_farmacia1)
     assert r.status_code == 403
+
+
+# --------------------------------------------------------------------------- #
+# Sacar del catálogo (DELETE /v1/ofertas/{id})
+# --------------------------------------------------------------------------- #
+
+def test_sacar_oferta_del_catalogo(client, headers_proveedor1):
+    """Una oferta sin órdenes se puede sacar; su historial cae en cascada."""
+    db = get_service_client()
+    prod = _producto_no_ofertado()
+    r = client.post(
+        "/v1/ofertas/",
+        json={"producto_maestro_id": prod, "precio": 4000, "stock_disponible": 10},
+        headers=headers_proveedor1,
+    )
+    assert r.status_code == 201, r.text
+    oferta_id = r.json()["data"]["id"]
+
+    r_del = client.delete(f"/v1/ofertas/{oferta_id}", headers=headers_proveedor1)
+    assert r_del.status_code == 200, r_del.text
+    assert r_del.json()["data"]["id"] == oferta_id
+
+    quedan = db.table("ofertas").select("id").eq("id", oferta_id).execute()
+    assert not quedan.data
+    # Repetir el DELETE => 404 (ya no existe).
+    assert client.delete(f"/v1/ofertas/{oferta_id}", headers=headers_proveedor1).status_code == 404
+
+
+def test_no_sacar_oferta_con_ordenes(client, headers_proveedor1):
+    """Una oferta referenciada por una orden NO se borra (FK restrict): 409."""
+    db = get_service_client()
+    prod = _producto_id("Acetaminofén 500mg")  # está en ORD-0001 del seed
+    of = (
+        db.table("ofertas").select("id").eq("organizacion_id", ORG_PROVEEDOR1).eq("producto_maestro_id", prod).single().execute()
+    ).data
+    r = client.delete(f"/v1/ofertas/{of['id']}", headers=headers_proveedor1)
+    assert r.status_code == 409
+    assert r.json()["detail"] == "oferta_en_orden"
+    # Sigue existiendo.
+    assert db.table("ofertas").select("id").eq("id", of["id"]).execute().data
+
+
+def test_no_sacar_oferta_ajena(client, headers_proveedor2):
+    """Multi-tenant: un proveedor no puede borrar ofertas de otro (404 para él)."""
+    db = get_service_client()
+    of = (
+        db.table("ofertas").select("id").eq("organizacion_id", ORG_PROVEEDOR1).limit(1).execute()
+    ).data[0]
+    r = client.delete(f"/v1/ofertas/{of['id']}", headers=headers_proveedor2)
+    assert r.status_code == 404
+    assert db.table("ofertas").select("id").eq("id", of["id"]).execute().data

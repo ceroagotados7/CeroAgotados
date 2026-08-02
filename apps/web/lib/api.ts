@@ -24,8 +24,6 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      // Evita la página de advertencia de ngrok en el túnel de demo (inofensivo fuera de ngrok).
-      "ngrok-skip-browser-warning": "true",
       ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
       ...(init.headers ?? {}),
     },
@@ -55,4 +53,5 @@ export const api = {
     request<T>(path, { method: "POST", body: JSON.stringify(data ?? {}) }),
   patch: <T>(path: string, data?: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(data ?? {}) }),
+  del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

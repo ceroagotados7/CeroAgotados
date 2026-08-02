@@ -9,6 +9,7 @@ from app.schemas.ofertas import (
     OfertaBulkRequest,
     OfertaBulkResult,
     OfertaCreate,
+    OfertaEliminada,
     OfertaUpdate,
 )
 
@@ -111,6 +112,37 @@ async def actualizar_oferta(
         ).execute()
 
     return ApiResponse(data=_reload(db, oferta_id, org_id))
+
+
+@router.delete("/{oferta_id}")
+def eliminar_oferta(
+    oferta_id: str, org_id: ProviderOrgId, db: SupabaseDep
+) -> ApiResponse[OfertaEliminada]:
+    """Saca una oferta del catálogo del proveedor ("Sacar del catálogo").
+
+    Solo se permite si la oferta nunca fue parte de una orden: `orden_items.oferta_id`
+    es `on delete restrict`, así que una oferta con historial de órdenes debe pausarse
+    (activo=false), no borrarse. `historial_precios` cae en cascada.
+    """
+    actual = (
+        db.table("ofertas")
+        .select("id")
+        .eq("id", oferta_id)
+        .eq("organizacion_id", org_id)  # scope: solo ofertas propias
+        .execute()
+    )
+    if not actual.data:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "oferta_no_encontrada")
+
+    # ¿Referenciada por alguna orden? (FK on delete restrict → el DELETE fallaría).
+    en_orden = (
+        db.table("orden_items").select("id").eq("oferta_id", oferta_id).limit(1).execute()
+    )
+    if en_orden.data:
+        raise HTTPException(status.HTTP_409_CONFLICT, "oferta_en_orden")
+
+    db.table("ofertas").delete().eq("id", oferta_id).eq("organizacion_id", org_id).execute()
+    return ApiResponse(data=OfertaEliminada(id=oferta_id))
 
 
 @router.post("/bulk")

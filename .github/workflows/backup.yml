@@ -1,0 +1,71 @@
+# Backup diario de datos (puente gratuito hasta Supabase Pro con backups gestionados).
+# Exporta todas las tablas de negocio vía PostgREST (service_role) + usuarios de Auth,
+# y lo guarda como artifact privado del repo (retención 30 días). El schema ya está
+# versionado en supabase/migrations/, así que datos + migraciones = restauración completa.
+name: backup-diario
+
+on:
+  schedule:
+    - cron: "0 7 * * *" # 07:00 UTC = 02:00 Colombia
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Export de datos
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python3 - << 'EOF'
+          import json, os, urllib.request
+
+          base = os.environ["SUPABASE_URL"]
+          key = os.environ["SERVICE_ROLE_KEY"]
+          headers = {"apikey": key, "Authorization": f"Bearer {key}"}
+
+          tablas = [
+              "profiles", "organizaciones", "miembros_organizacion", "roles_plataforma",
+              "producto_maestro", "ofertas", "historial_precios",
+              "ordenes", "orden_items", "orden_eventos",
+          ]
+          os.makedirs("backup", exist_ok=True)
+
+          def get(url, extra=None):
+              req = urllib.request.Request(url, headers={**headers, **(extra or {})})
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  return json.load(r)
+
+          for t in tablas:
+              filas, offset, page = [], 0, 1000
+              while True:
+                  lote = get(f"{base}/rest/v1/{t}?select=*&limit={page}&offset={offset}")
+                  filas.extend(lote)
+                  if len(lote) < page:
+                      break
+                  offset += page
+              with open(f"backup/{t}.json", "w") as f:
+                  json.dump(filas, f, ensure_ascii=False, default=str)
+              print(f"{t}: {len(filas)} filas")
+
+          # Usuarios de Auth (GoTrue admin). Paginado.
+          usuarios, pagina = [], 1
+          while True:
+              data = get(f"{base}/auth/v1/admin/users?page={pagina}&per_page=1000")
+              lote = data.get("users", data if isinstance(data, list) else [])
+              usuarios.extend(lote)
+              if len(lote) < 1000:
+                  break
+              pagina += 1
+          with open("backup/auth_users.json", "w") as f:
+              json.dump(usuarios, f, ensure_ascii=False, default=str)
+          print(f"auth_users: {len(usuarios)}")
+          EOF
+
+      - name: Subir artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 30
