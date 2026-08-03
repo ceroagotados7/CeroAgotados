@@ -1,5 +1,16 @@
 import os
 import time
+from pathlib import Path
+
+# Ambiente DEV: si existe apps/api/.env.test (proyecto Supabase cero-agotados-dev),
+# sus variables MANDAN sobre el .env — así la suite nunca toca la DB de demo/prod.
+_ENV_TEST = Path(__file__).resolve().parent.parent / ".env.test"
+if _ENV_TEST.exists():
+    for _linea in _ENV_TEST.read_text(encoding="utf-8").splitlines():
+        _linea = _linea.strip()
+        if _linea and not _linea.startswith("#") and "=" in _linea:
+            _k, _v = _linea.split("=", 1)
+            os.environ[_k.strip()] = _v.strip()
 
 # Los tests acuñan JWT HS256; en modo cloud la API solo acepta ES256/RS256 (JWKS),
 # así que forzamos entorno local ANTES de importar la config (env var > .env).

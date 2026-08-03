@@ -142,16 +142,6 @@ def comparar_producto(
 # Crear pedido (f4) — una orden por proveedor, precio congelado
 # --------------------------------------------------------------------------- #
 
-def _siguiente_codigo(db) -> str:
-    """Siguiente código legible tipo ORD-0007. El UNIQUE de `codigo` protege la
-    carrera: si dos pedidos chocan, el perdedor reintenta con el siguiente."""
-    res = (
-        db.table("ordenes").select("codigo").order("codigo", desc=True).limit(1).execute()
-    ).data
-    ultimo = int(res[0]["codigo"].split("-")[1]) if res else 0
-    return f"ORD-{ultimo + 1:04d}"
-
-
 @router.post("/pedido", status_code=status.HTTP_201_CREATED)
 def crear_pedido(
     payload: PedidoCreate,
@@ -162,113 +152,43 @@ def crear_pedido(
     """Convierte el carrito en órdenes: UNA por proveedor (f4), congelando el
     precio de cada ítem al valor vigente (snapshot).
 
-    Nota de integridad: sin acceso DDL a la DB aún no hay RPC transaccional para
-    la creación; se usa inserción compensada (si fallan los ítems se borra la
-    orden, cascade limpia). El gate de integridad fuerte sigue siendo la RPC
-    `aceptar_orden` del proveedor. TODO: mover a RPC cuando haya acceso de DDL.
+    Delega en la RPC transaccional `crear_pedido` (atómica, con lock de las
+    ofertas y código por secuencia). La respuesta anonimiza al proveedor.
     """
     ids = [i.oferta_id for i in payload.items]
     if len(set(ids)) != len(ids):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "oferta_repetida_en_pedido")
 
-    ofertas = (
-        db.table("ofertas")
-        .select("id, organizacion_id, producto_maestro_id, precio, stock_disponible, activo")
-        .in_("id", ids)
-        .execute()
-    ).data or []
-    por_id = {o["id"]: o for o in ofertas}
+    try:
+        res = db.rpc(
+            "crear_pedido",
+            {
+                "p_farmacia_id": org_id,
+                "p_actor": user_id,
+                "p_items": [i.model_dump() for i in payload.items],
+                "p_notas": payload.notas,
+            },
+        ).execute()
+    except APIError as exc:
+        msg = (exc.message or "").strip()
+        if any(
+            e in msg
+            for e in ("oferta_no_disponible", "stock_insuficiente", "cantidad_invalida", "pedido_vacio")
+        ):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, msg) from exc
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "no_se_pudo_crear_pedido") from exc
 
-    errores: list[str] = []
-    for item in payload.items:
-        oferta = por_id.get(item.oferta_id)
-        if oferta is None or not oferta["activo"]:
-            errores.append(f"{item.oferta_id}: oferta_no_disponible")
-        elif item.cantidad > oferta["stock_disponible"]:
-            errores.append(f"{item.oferta_id}: stock_insuficiente")
-    if errores:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "; ".join(errores))
-
-    # Agrupa por proveedor: una orden por cada uno (regla f4).
-    grupos: dict[str, list] = {}
-    for item in payload.items:
-        grupos.setdefault(por_id[item.oferta_id]["organizacion_id"], []).append(item)
-
-    creadas: list[OrdenCreada] = []
-    total = 0.0
-    for proveedor_id, items in grupos.items():
-        orden_id: str | None = None
-        try:
-            # Código con reintento: el UNIQUE de `codigo` resuelve la carrera.
-            for _ in range(3):
-                try:
-                    orden = (
-                        db.table("ordenes")
-                        .insert(
-                            {
-                                "codigo": _siguiente_codigo(db),
-                                "farmacia_id": org_id,
-                                "proveedor_id": proveedor_id,
-                                "estado": "pendiente",
-                                "notas": payload.notas,
-                                "created_by": user_id,
-                            }
-                        )
-                        .execute()
-                    )
-                    break
-                except APIError as exc:
-                    if "duplicate" not in (exc.message or "").lower():
-                        raise
-            else:
-                raise HTTPException(status.HTTP_409_CONFLICT, "no_se_pudo_generar_codigo")
-
-            orden_id = orden.data[0]["id"]
-            filas = [
-                {
-                    "orden_id": orden_id,
-                    "oferta_id": item.oferta_id,
-                    "producto_maestro_id": por_id[item.oferta_id]["producto_maestro_id"],
-                    # Snapshot: el precio queda CONGELADO al valor vigente ahora.
-                    "precio_unitario_snapshot": por_id[item.oferta_id]["precio"],
-                    "cantidad_solicitada": item.cantidad,
-                }
-                for item in items
-            ]
-            db.table("orden_items").insert(filas).execute()
-            db.table("orden_eventos").insert(
-                {
-                    "orden_id": orden_id,
-                    "actor_id": user_id,
-                    "tipo": "creada",
-                    "payload": {"n_items": len(filas)},
-                }
-            ).execute()
-        except HTTPException:
-            raise
-        except Exception as exc:  # noqa: BLE001 — compensación: sin órdenes a medias
-            if orden_id:
-                db.table("ordenes").delete().eq("id", orden_id).execute()
-            for c in creadas:  # revierte las órdenes hermanas ya creadas del pedido
-                db.table("ordenes").delete().eq("id", c.orden_id).execute()
-            raise HTTPException(
-                status.HTTP_400_BAD_REQUEST, "no_se_pudo_crear_pedido"
-            ) from exc
-
-        subtotal = sum(
-            float(por_id[i.oferta_id]["precio"]) * i.cantidad for i in items
+    creadas = [
+        OrdenCreada(
+            orden_id=o["orden_id"],
+            codigo=o["codigo"],
+            proveedor_alias=_alias_proveedor(o["proveedor_id"]),  # id → alias, nunca expuesto
+            n_items=o["n_items"],
+            subtotal=round(float(o["subtotal"]), 2),
         )
-        total += subtotal
-        creadas.append(
-            OrdenCreada(
-                orden_id=orden_id,
-                codigo=orden.data[0]["codigo"],
-                proveedor_alias=_alias_proveedor(proveedor_id),
-                n_items=len(items),
-                subtotal=round(subtotal, 2),
-            )
-        )
-
+        for o in (res.data or [])
+    ]
+    total = sum(c.subtotal for c in creadas)
     return ApiResponse(data=PedidoCreadoResult(ordenes=creadas, total=round(total, 2)))
 
 
