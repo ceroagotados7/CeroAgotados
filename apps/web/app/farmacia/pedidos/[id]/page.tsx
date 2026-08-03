@@ -102,7 +102,12 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
         <Card className="mb-3 divide-y divide-line">
           {pedido.items.map((i) => {
             const rechazado = i.estado_item === "rechazado";
-            const cantidad = gestionado && !rechazado ? i.cantidad_aceptada : i.cantidad_solicitada;
+            // En una orden cancelada los ítems quedan "pendientes" con aceptada=0:
+            // se muestra lo solicitado (mostrar "0 cajas" confunde).
+            const cantidad =
+              gestionado && !rechazado && pedido.estado !== "cancelada"
+                ? i.cantidad_aceptada
+                : i.cantidad_solicitada;
             return (
               <div key={i.id} className="flex items-center gap-3 p-3.5">
                 <div className="min-w-0 flex-1">
