@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Building2, Hash, Lock, Mail, MapPin, Plus, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, Factory, Hash, Lock, Mail, MapPin, Plus, Store, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,10 +14,18 @@ const ERRORES: Record<string, string> = {
   nit_ya_registrado: "Ese NIT ya está registrado por otra empresa.",
 };
 
+type Tipo = "proveedor" | "farmacia";
+
+const TIPOS: { tipo: Tipo; label: string; icon: typeof Factory; hint: string }[] = [
+  { tipo: "proveedor", label: "Proveedor", icon: Factory, hint: "Laboratorio o distribuidora" },
+  { tipo: "farmacia", label: "Farmacia", icon: Store, hint: "Farmacia o droguería" },
+];
+
 export default function RegistroPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const [tipo, setTipo] = useState<Tipo>("proveedor");
   const [razonSocial, setRazonSocial] = useState("");
   const [nit, setNit] = useState("");
   const [ciudad, setCiudad] = useState("");
@@ -41,7 +49,7 @@ export default function RegistroPage() {
     }
     setLoading(true);
     try {
-      await api.post("/onboarding/proveedor", {
+      await api.post(`/onboarding/${tipo}`, {
         razon_social: razonSocial,
         nit: nit || null,
         ciudad: ciudad || null,
@@ -49,13 +57,13 @@ export default function RegistroPage() {
         email,
         password,
       });
-      // Alta OK → iniciar sesión automáticamente y entrar al panel.
+      // Alta OK → iniciar sesión automáticamente y entrar al panel del rol.
       const { error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
       if (loginErr) {
         router.push("/login");
         return;
       }
-      router.push("/proveedor");
+      router.push(tipo === "farmacia" ? "/farmacia" : "/proveedor");
     } catch (err) {
       const code = err instanceof ApiCallError ? err.code : "";
       setError(ERRORES[code] ?? "No se pudo crear la cuenta. Revisa los datos e inténtalo de nuevo.");
@@ -74,14 +82,41 @@ export default function RegistroPage() {
           </div>
           <span className="font-display text-2xl font-extrabold tracking-tight">Cero Agotados</span>
         </div>
-        <h1 className="relative mt-6 font-display text-[24px] font-extrabold leading-tight">Crea tu cuenta de proveedor</h1>
+        <h1 className="relative mt-6 font-display text-[24px] font-extrabold leading-tight">
+          {tipo === "farmacia" ? "Crea tu cuenta de farmacia" : "Crea tu cuenta de proveedor"}
+        </h1>
         <p className="relative mt-1.5 max-w-[280px] text-[13.5px] text-white/85">
-          Registra tu laboratorio o distribuidora y empieza a ofertar al mejor precio.
+          {tipo === "farmacia"
+            ? "Registra tu farmacia y compra siempre al mejor precio."
+            : "Registra tu laboratorio o distribuidora y empieza a ofertar al mejor precio."}
         </p>
       </div>
 
       <div className="relative -mt-6 px-5 pb-10">
         <form onSubmit={onSubmit} className="card p-5">
+          <p className="label">Tipo de empresa</p>
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            {TIPOS.map(({ tipo: t, label, icon: Icon, hint }) => {
+              const active = tipo === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTipo(t)}
+                  aria-pressed={active}
+                  className={`flex flex-col items-start gap-1 rounded-2xl border p-3 text-left transition ${
+                    active ? "border-2 border-primary bg-primary-50" : "border-line bg-surface"
+                  }`}
+                >
+                  <span className={`flex items-center gap-1.5 text-[13.5px] font-semibold ${active ? "text-primary-800" : ""}`}>
+                    <Icon size={16} /> {label}
+                  </span>
+                  <span className="text-[11.5px] text-muted">{hint}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <p className="label">Datos de la empresa</p>
           <div className="relative mb-3">
             <Building2 size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />

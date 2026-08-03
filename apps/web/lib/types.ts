@@ -120,3 +120,54 @@ export type ItemDecision = {
   producto_sustituto_id?: string | null;
   oferta_sustituto_id?: string | null;
 };
+
+/* ------------------------------------------------------------------ */
+/* Flujo Farmacia (f1–f6). El proveedor SIEMPRE viene anonimizado      */
+/* (`proveedor_alias`): la API nunca expone su identidad a farmacias.  */
+/* ------------------------------------------------------------------ */
+
+export type ProductoBusqueda = ProductoMaestro & {
+  opciones: number;
+  precio_desde: number;
+};
+
+export type OpcionCompara = {
+  oferta_id: string;
+  proveedor_alias: string;
+  precio: number;
+  stock_disponible: number;
+  es_mejor_precio: boolean;
+  diferencia_vs_mejor: number;
+};
+
+export type CompararResult = {
+  producto: ProductoMaestro;
+  opciones_total: number;
+  precio_min?: number | null;
+  precio_promedio?: number | null;
+  opciones: OpcionCompara[];
+};
+
+export type OrdenCreada = {
+  orden_id: string;
+  codigo: string;
+  proveedor_alias: string;
+  n_items: number;
+  subtotal: number;
+};
+
+export type PedidoCreadoResult = {
+  ordenes: OrdenCreada[];
+  total: number;
+};
+
+export type PedidoFarmacia = {
+  id: string;
+  codigo: string;
+  estado: EstadoOrden;
+  total: number;
+  total_solicitado: number;
+  proveedor_alias: string;
+  created_at: string;
+  items: OrdenItem[];
+};

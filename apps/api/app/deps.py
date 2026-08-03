@@ -63,11 +63,8 @@ CurrentUserId = Annotated[str, Depends(get_current_user_id)]
 SupabaseDep = Annotated[Client, Depends(get_service_client)]
 
 
-def get_provider_org_id(user_id: CurrentUserId, db: SupabaseDep) -> str:
-    """Devuelve la organización de tipo `proveedor` a la que pertenece el usuario.
-
-    403 si el usuario no es miembro de ninguna organización proveedor.
-    """
+def _org_id_por_tipo(user_id: str, db: Client, tipo: str, error: str) -> str:
+    """Organización del `tipo` dado a la que pertenece el usuario (403 si no)."""
     miembros = (
         db.table("miembros_organizacion")
         .select("organizacion_id")
@@ -82,13 +79,46 @@ def get_provider_org_id(user_id: CurrentUserId, db: SupabaseDep) -> str:
         db.table("organizaciones")
         .select("id, tipo")
         .in_("id", org_ids)
-        .eq("tipo", "proveedor")
+        .eq("tipo", tipo)
         .limit(1)
         .execute()
     )
     if not orgs.data:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "no_es_proveedor")
+        raise HTTPException(status.HTTP_403_FORBIDDEN, error)
     return orgs.data[0]["id"]
 
 
+def get_provider_org_id(user_id: CurrentUserId, db: SupabaseDep) -> str:
+    """Organización `proveedor` del usuario (403 si no es proveedor)."""
+    return _org_id_por_tipo(user_id, db, "proveedor", "no_es_proveedor")
+
+
+def get_pharmacy_org_id(user_id: CurrentUserId, db: SupabaseDep) -> str:
+    """Organización `farmacia` del usuario (403 si no es farmacia)."""
+    return _org_id_por_tipo(user_id, db, "farmacia", "no_es_farmacia")
+
+
+def get_user_org(user_id: CurrentUserId, db: SupabaseDep) -> dict:
+    """Primera organización del usuario, del tipo que sea (para /me)."""
+    miembros = (
+        db.table("miembros_organizacion")
+        .select("organizacion_id")
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    if not miembros.data:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "sin_organizacion")
+    org = (
+        db.table("organizaciones")
+        .select("id, tipo, razon_social, nit, ciudad, verificado")
+        .eq("id", miembros.data[0]["organizacion_id"])
+        .single()
+        .execute()
+    )
+    return org.data
+
+
 ProviderOrgId = Annotated[str, Depends(get_provider_org_id)]
+PharmacyOrgId = Annotated[str, Depends(get_pharmacy_org_id)]
+UserOrg = Annotated[dict, Depends(get_user_org)]

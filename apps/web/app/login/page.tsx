@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui";
+import { clearMe, fetchMe } from "@/lib/me";
 import { createClient } from "@/lib/supabase/client";
 
 type Rol = "proveedor" | "farmacia" | "admin";
@@ -38,12 +39,20 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       setError("Credenciales inválidas. Verifica el correo y la contraseña.");
       return;
     }
-    router.push(ROLES.find((r) => r.rol === rol)!.ruta);
+    // Enruta por el tipo REAL de la organización (no por la pestaña elegida):
+    // evita que una farmacia caiga en el panel de proveedor o viceversa.
+    clearMe();
+    try {
+      const me = await fetchMe();
+      router.push(me.organizacion.tipo === "farmacia" ? "/farmacia" : "/proveedor");
+    } catch {
+      router.push(ROLES.find((r) => r.rol === rol)!.ruta);
+    }
   }
 
   return (

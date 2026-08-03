@@ -3,7 +3,7 @@
 // Piezas de estructura (shell) del área autenticada: app bar por pantalla,
 // barra con "atrás" para sub-pantallas y bottom-nav de 4 tabs.
 // Mobile-first y responsive: el contenido vive en una columna fluida centrada.
-import { ArrowLeft, ClipboardList, LayoutDashboard, Pill, User } from "lucide-react";
+import { ArrowLeft, ClipboardList, LayoutDashboard, Pill, Search, ShoppingCart, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -50,8 +50,16 @@ const TABS = [
   { href: "/proveedor/cuenta", label: "Cuenta", icon: User },
 ];
 
+// Tabs del rol farmacia (f1–f6): buscar, pedido en curso, seguimiento, cuenta.
+const TABS_FARMACIA = [
+  { href: "/farmacia", label: "Buscar", icon: Search },
+  { href: "/farmacia/pedido", label: "Pedido", icon: ShoppingCart },
+  { href: "/farmacia/pedidos", label: "Mis pedidos", icon: ClipboardList },
+  { href: "/farmacia/cuenta", label: "Cuenta", icon: User },
+];
+
 // Rutas que son "tab principal" y por tanto muestran el bottom-nav.
-const MAIN_TAB_HREFS = new Set(TABS.map((t) => t.href));
+const MAIN_TAB_HREFS = new Set([...TABS, ...TABS_FARMACIA].map((t) => t.href));
 
 /** ¿La ruta actual es una tab principal (muestra bottom-nav) o una sub-pantalla? */
 export function isMainTab(pathname: string): boolean {
@@ -59,12 +67,14 @@ export function isMainTab(pathname: string): boolean {
 }
 
 /** Bottom-nav flotante de 4 tabs, constreñido a la columna móvil. */
-export function BottomNav() {
+export function BottomNav({ rol = "proveedor" }: { rol?: "proveedor" | "farmacia" }) {
   const pathname = usePathname();
+  const tabs = rol === "farmacia" ? TABS_FARMACIA : TABS;
+  const home = rol === "farmacia" ? "/farmacia" : "/proveedor";
   return (
     <nav className="bottomnav fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2">
-      {TABS.map(({ href, label, icon: Icon }) => {
-        const active = href === "/proveedor" ? pathname === href : pathname.startsWith(href);
+      {tabs.map(({ href, label, icon: Icon }) => {
+        const active = href === home ? pathname === href : pathname.startsWith(href);
         return (
           <Link key={href} href={href} className={`navitem ${active ? "active" : ""}`}>
             <Icon />

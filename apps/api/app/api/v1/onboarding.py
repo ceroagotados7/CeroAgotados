@@ -17,10 +17,23 @@ def _es_email_duplicado(exc: Exception) -> bool:
 def registrar_proveedor(
     payload: RegistroProveedorRequest, db: SupabaseDep
 ) -> ApiResponse[RegistroProveedorResult]:
-    """Alta autoservicio de un proveedor: crea el usuario (auto-confirmado, sin
-    verificación de email por ahora), su organización proveedor y la membresía.
+    """Alta autoservicio de un proveedor (registro público)."""
+    return _registrar_organizacion(payload, db, tipo="proveedor")
 
-    Endpoint público (no requiere sesión): es el registro. Usa service role.
+
+@router.post("/farmacia", status_code=status.HTTP_201_CREATED)
+def registrar_farmacia(
+    payload: RegistroProveedorRequest, db: SupabaseDep
+) -> ApiResponse[RegistroProveedorResult]:
+    """Alta autoservicio de una farmacia (registro público)."""
+    return _registrar_organizacion(payload, db, tipo="farmacia")
+
+
+def _registrar_organizacion(
+    payload: RegistroProveedorRequest, db, tipo: str
+) -> ApiResponse[RegistroProveedorResult]:
+    """Crea el usuario (auto-confirmado, sin verificación de email por ahora),
+    su organización del `tipo` dado y la membresía. Usa service role.
     """
     # 1) Usuario de Auth, auto-confirmado (sin verificación de email por ahora).
     try:
@@ -42,13 +55,13 @@ def registrar_proveedor(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "no_se_pudo_crear_usuario")
     user_id = user.id
 
-    # 2) Organización proveedor. Si falla, revertimos el usuario (sin huérfanos).
+    # 2) Organización. Si falla, revertimos el usuario (sin huérfanos).
     try:
         org_res = (
             db.table("organizaciones")
             .insert(
                 {
-                    "tipo": "proveedor",
+                    "tipo": tipo,
                     "razon_social": payload.razon_social,
                     "nit": payload.nit,
                     "ciudad": payload.ciudad,
