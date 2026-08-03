@@ -3,10 +3,12 @@
 // Piezas de estructura (shell) del área autenticada: app bar por pantalla,
 // barra con "atrás" para sub-pantallas y bottom-nav de 4 tabs.
 // Mobile-first y responsive: el contenido vive en una columna fluida centrada.
-import { ArrowLeft, ClipboardList, LayoutDashboard, Pill, Search, ShoppingCart, User } from "lucide-react";
+import { ArrowLeft, BarChart3, ClipboardList, LayoutDashboard, PiggyBank, Pill, Search, ShoppingCart, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
+import { api } from "@/lib/api";
 
 /** App bar genérica (cada pantalla compone su contenido). */
 export function AppBar({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -58,26 +60,69 @@ const TABS_FARMACIA = [
   { href: "/farmacia/cuenta", label: "Cuenta", icon: User },
 ];
 
+// Tabs del rol admin (a1–a3).
+const TABS_ADMIN = [
+  { href: "/admin", label: "Resumen", icon: BarChart3 },
+  { href: "/admin/ganancias", label: "Ganancias", icon: PiggyBank },
+  { href: "/admin/cuenta", label: "Cuenta", icon: User },
+];
+
 // Rutas que son "tab principal" y por tanto muestran el bottom-nav.
-const MAIN_TAB_HREFS = new Set([...TABS, ...TABS_FARMACIA].map((t) => t.href));
+const MAIN_TAB_HREFS = new Set([...TABS, ...TABS_FARMACIA, ...TABS_ADMIN].map((t) => t.href));
 
 /** ¿La ruta actual es una tab principal (muestra bottom-nav) o una sub-pantalla? */
 export function isMainTab(pathname: string): boolean {
   return MAIN_TAB_HREFS.has(pathname);
 }
 
+/** Órdenes pendientes del proveedor (notificación). Se refresca al montar, al
+ *  volver el foco a la pestaña y cada 30 s — el punto rojo aparece sin recargar. */
+function usePendientes(activo: boolean): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!activo) return;
+    let vivo = true;
+    const tick = () =>
+      api
+        .get<{ pendientes: number }>("/ordenes/resumen")
+        .then((d) => vivo && setN(d.pendientes))
+        .catch(() => {});
+    tick();
+    const cada30s = setInterval(tick, 30_000);
+    window.addEventListener("focus", tick);
+    return () => {
+      vivo = false;
+      clearInterval(cada30s);
+      window.removeEventListener("focus", tick);
+    };
+  }, [activo]);
+  return activo ? n : 0;
+}
+
 /** Bottom-nav flotante de 4 tabs, constreñido a la columna móvil. */
-export function BottomNav({ rol = "proveedor" }: { rol?: "proveedor" | "farmacia" }) {
+export function BottomNav({ rol = "proveedor" }: { rol?: "proveedor" | "farmacia" | "admin" }) {
   const pathname = usePathname();
-  const tabs = rol === "farmacia" ? TABS_FARMACIA : TABS;
-  const home = rol === "farmacia" ? "/farmacia" : "/proveedor";
+  const pendientes = usePendientes(rol === "proveedor");
+  const tabs = rol === "farmacia" ? TABS_FARMACIA : rol === "admin" ? TABS_ADMIN : TABS;
+  const home = rol === "farmacia" ? "/farmacia" : rol === "admin" ? "/admin" : "/proveedor";
   return (
     <nav className="bottomnav fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2">
       {tabs.map(({ href, label, icon: Icon }) => {
         const active = href === home ? pathname === href : pathname.startsWith(href);
+        const conBadge = href === "/proveedor/ordenes" && pendientes > 0;
         return (
           <Link key={href} href={href} className={`navitem ${active ? "active" : ""}`}>
-            <Icon />
+            <span className="relative">
+              <Icon />
+              {conBadge && (
+                <span
+                  className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold leading-none text-white"
+                  aria-label={`${pendientes} órdenes pendientes`}
+                >
+                  {pendientes > 9 ? "9+" : pendientes}
+                </span>
+              )}
+            </span>
             {label}
           </Link>
         );

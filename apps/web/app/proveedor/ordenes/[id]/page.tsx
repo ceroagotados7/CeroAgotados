@@ -14,7 +14,9 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
 
   const [orden, setOrden] = useState<Orden | null>(null);
   const [stockPorProducto, setStockPorProducto] = useState<Record<string, number>>({});
-  const [disp, setDisp] = useState<Record<string, boolean>>({});
+  // Cantidad a aceptar por ítem (0 = sin stock). Permite aceptación PARCIAL
+  // por cantidad, no solo todo-o-nada por ítem.
+  const [acepta, setAcepta] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,10 +35,13 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
         for (const of of ofertas) stock[of.producto_maestro_id] = of.stock_disponible;
         setStockPorProducto(stock);
         setOrden(o);
-        // Disponibilidad por defecto: hay stock suficiente para lo solicitado.
-        setDisp(
+        // Por defecto se acepta lo que el stock alcance (hasta lo solicitado).
+        setAcepta(
           Object.fromEntries(
-            o.items.map((it) => [it.id, (stock[it.producto_maestro_id] ?? 0) >= it.cantidad_solicitada]),
+            o.items.map((it) => [
+              it.id,
+              Math.min(stock[it.producto_maestro_id] ?? 0, it.cantidad_solicitada),
+            ]),
           ),
         );
       })
@@ -56,15 +61,15 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
     let aDespachar = 0;
     let disponibles = 0;
     for (const it of orden.items) {
-      const sub = it.cantidad_solicitada * it.precio_unitario_snapshot;
-      solicitado += sub;
-      if (disp[it.id]) {
-        aDespachar += sub;
+      solicitado += it.cantidad_solicitada * it.precio_unitario_snapshot;
+      const cant = acepta[it.id] ?? 0;
+      if (cant > 0) {
+        aDespachar += cant * it.precio_unitario_snapshot;
         disponibles += 1;
       }
     }
     return { solicitado, aDespachar, disponibles };
-  }, [orden, disp]);
+  }, [orden, acepta]);
 
   if (error) return <p className="px-5 pt-4 text-danger">{error}</p>;
   if (!orden) return <Spinner />;
@@ -74,11 +79,11 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
     setError(null);
     try {
       const decisiones: ItemDecision[] = orden!.items.map((it) => {
-        const disponible = !rechazarTodo && disp[it.id];
+        const cantidad = rechazarTodo ? 0 : (acepta[it.id] ?? 0);
         return {
           item_id: it.id,
-          estado: disponible ? "aceptado" : "rechazado",
-          cantidad_aceptada: disponible ? it.cantidad_solicitada : 0,
+          estado: cantidad > 0 ? "aceptado" : "rechazado",
+          cantidad_aceptada: cantidad,
         };
       });
       await api.post(`/ordenes/${id}/aceptar`, { decisiones });
@@ -129,7 +134,7 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
         {editable ? (
           <>
             <div className="mb-2 flex items-center gap-1.5 px-1 text-[12px] text-muted">
-              <Info size={14} /> Confirma la disponibilidad de cada ítem.
+              <Info size={14} /> Confirma cuántas cajas puedes despachar de cada ítem.
             </div>
             <div className="space-y-2.5">
               {orden.items.map((it) => (
@@ -137,8 +142,8 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
                   key={it.id}
                   item={it}
                   stock={stockPorProducto[it.producto_maestro_id] ?? 0}
-                  disponible={disp[it.id] ?? false}
-                  onChange={(v) => setDisp((d) => ({ ...d, [it.id]: v }))}
+                  cantidad={acepta[it.id] ?? 0}
+                  onChange={(v) => setAcepta((d) => ({ ...d, [it.id]: v }))}
                 />
               ))}
             </div>
@@ -201,15 +206,18 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
 function ItemEditable({
   item,
   stock,
-  disponible,
+  cantidad,
   onChange,
 }: {
   item: OrdenItem;
   stock: number;
-  disponible: boolean;
-  onChange: (v: boolean) => void;
+  cantidad: number;
+  onChange: (v: number) => void;
 }) {
-  const subtotal = item.cantidad_solicitada * item.precio_unitario_snapshot;
+  const disponible = cantidad > 0;
+  const parcial = disponible && cantidad < item.cantidad_solicitada;
+  const maximo = item.cantidad_solicitada; // el proveedor decide hasta lo solicitado
+  const subtotal = cantidad * item.precio_unitario_snapshot;
   return (
     <Card className={`p-3.5 ${!disponible ? "border border-danger-100 bg-danger-50/40" : ""}`}>
       <div className="flex items-start gap-3">
@@ -223,26 +231,50 @@ function ItemEditable({
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold leading-tight">{item.producto?.nombre ?? "Producto"}</p>
           <p className={`mt-0.5 text-[12px] ${disponible ? "text-muted" : "text-danger/90"}`}>
-            {item.cantidad_solicitada} cajas × {cop(item.precio_unitario_snapshot)} · tu stock:{" "}
+            Pide {item.cantidad_solicitada} cajas × {cop(item.precio_unitario_snapshot)} · tu stock:{" "}
             <b className={disponible ? "text-primary-700" : ""}>{stock}</b>
           </p>
         </div>
-        <p className={`font-display text-[14px] font-bold ${disponible ? "" : "text-muted line-through"}`}>{cop(subtotal)}</p>
+        <p className={`font-display text-[14px] font-bold ${disponible ? "" : "text-muted line-through"}`}>
+          {cop(disponible ? subtotal : item.cantidad_solicitada * item.precio_unitario_snapshot)}
+        </p>
       </div>
+
       <div className={`mt-3 flex gap-2 border-t pt-3 ${disponible ? "border-line" : "border-danger-100"}`}>
         <button
-          onClick={() => onChange(true)}
+          onClick={() => onChange(Math.min(stock, maximo) || maximo)}
           className={`chip flex-1 justify-center ${disponible ? "chip-active" : ""}`}
         >
           <Check size={14} /> Disponible
         </button>
         <button
-          onClick={() => onChange(false)}
+          onClick={() => onChange(0)}
           className={`chip flex-1 justify-center ${!disponible ? "!border-danger !bg-danger !text-white" : ""}`}
         >
           {!disponible && <X size={14} />} Sin stock
         </button>
       </div>
+
+      {/* Aceptación PARCIAL: el proveedor ajusta cuántas cajas despacha. */}
+      {disponible && (
+        <div className="mt-2.5 flex items-center gap-2">
+          <label className="flex-none text-[12px] text-muted" htmlFor={`cant-${item.id}`}>
+            Cajas a despachar
+          </label>
+          <input
+            id={`cant-${item.id}`}
+            type="number"
+            min={1}
+            max={maximo}
+            value={cantidad}
+            onChange={(e) => onChange(Math.max(1, Math.min(Number(e.target.value) || 1, maximo)))}
+            className="input w-[84px] flex-none py-2 text-center font-semibold"
+          />
+          <span className={`text-[12px] ${parcial ? "font-semibold text-amber-600" : "text-muted"}`}>
+            de {item.cantidad_solicitada} solicitadas{parcial && " · parcial"}
+          </span>
+        </div>
+      )}
       {!disponible && (
         <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-danger">
           <Info size={13} /> La farmacia podrá pedir este ítem a otro proveedor.

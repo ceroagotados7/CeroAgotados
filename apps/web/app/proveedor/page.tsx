@@ -52,14 +52,14 @@ export default function DashboardPage() {
             <p className="truncate font-display text-[16px] font-bold leading-none">{data.organizacion}</p>
           </div>
         </div>
-        <button className="icon-btn relative flex-none" aria-label="Notificaciones">
+        <Link href="/proveedor/ordenes" className="icon-btn relative flex-none" aria-label="Órdenes pendientes">
           <Bell size={19} />
           {data.ordenes_pendientes > 0 && (
             <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
               {data.ordenes_pendientes}
             </span>
           )}
-        </button>
+        </Link>
       </AppBar>
 
       <div className="px-5">

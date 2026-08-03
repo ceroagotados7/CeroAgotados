@@ -16,5 +16,7 @@ class Perfil(BaseModel):
 
 
 class Me(BaseModel):
-    organizacion: Organizacion
+    # None para el admin de plataforma (no pertenece a una organización).
+    organizacion: Organizacion | None = None
     perfil: Perfil
+    es_admin: bool = False

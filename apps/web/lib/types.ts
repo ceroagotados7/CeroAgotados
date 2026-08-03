@@ -109,8 +109,10 @@ export type Perfil = {
 };
 
 export type Me = {
-  organizacion: Organizacion;
+  // null para el admin de plataforma (no pertenece a una organización).
+  organizacion: Organizacion | null;
   perfil: Perfil;
+  es_admin?: boolean;
 };
 
 export type ItemDecision = {
@@ -170,4 +172,48 @@ export type PedidoFarmacia = {
   proveedor_alias: string;
   created_at: string;
   items: OrdenItem[];
+};
+
+/* ------------------------------------------------------------------ */
+/* Flujo Admin (a1–a3). El admin SÍ ve identidades reales.             */
+/* ------------------------------------------------------------------ */
+
+export type VentaOrg = {
+  id: string;
+  nombre: string;
+  total: number;
+  ordenes: number;
+};
+
+export type AdminDashboard = {
+  mes: string;
+  gmv_mes: number;
+  variacion_pct?: number | null;
+  ordenes_mes: number;
+  ticket_promedio: number;
+  proveedores_activos: number;
+  farmacias_activas: number;
+  ventas_por_proveedor: VentaOrg[];
+  top_farmacias: VentaOrg[];
+};
+
+export type AdminProveedorDetalle = {
+  id: string;
+  razon_social: string;
+  verificado: boolean;
+  medicamentos: number;
+  vendido_mes: number;
+  ordenes_mes: number;
+  farmacias: number;
+  ventas_por_farmacia: { nombre: string; total: number; ordenes: number; pct_del_proveedor: number }[];
+};
+
+export type AdminGanancias = {
+  mes: string;
+  comision_pct: number;
+  ganancia_mes: number;
+  gmv_mes: number;
+  margen_por_orden: number;
+  margen_por_producto: { nombre: string; gmv: number; comision: number; cajas: number }[];
+  ultimas_transacciones: { codigo: string; farmacia: string; proveedor: string; total: number; comision: number }[];
 };

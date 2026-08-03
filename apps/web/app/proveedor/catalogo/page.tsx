@@ -71,7 +71,7 @@ export default function CatalogoPage() {
     <>
       <AppBar className="justify-between">
         <div className="min-w-0">
-          <p className="mb-1 truncate text-[12px] leading-none text-muted">{me?.organizacion.razon_social ?? " "}</p>
+          <p className="mb-1 truncate text-[12px] leading-none text-muted">{me?.organizacion?.razon_social ?? " "}</p>
           <p className="font-display text-[20px] font-extrabold leading-none">Mi catálogo</p>
         </div>
         <IconButton aria-label="Filtros" className="flex-none">

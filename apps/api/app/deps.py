@@ -98,6 +98,25 @@ def get_pharmacy_org_id(user_id: CurrentUserId, db: SupabaseDep) -> str:
     return _org_id_por_tipo(user_id, db, "farmacia", "no_es_farmacia")
 
 
+def is_admin(user_id: str, db: Client) -> bool:
+    """¿El usuario es admin de plataforma? (tabla roles_plataforma)."""
+    res = (
+        db.table("roles_plataforma")
+        .select("user_id")
+        .eq("user_id", user_id)
+        .eq("rol", "admin")
+        .execute()
+    )
+    return bool(res.data)
+
+
+def get_admin_user_id(user_id: CurrentUserId, db: SupabaseDep) -> str:
+    """Usuario admin de plataforma (403 si no lo es)."""
+    if not is_admin(user_id, db):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "no_es_admin")
+    return user_id
+
+
 def get_user_org(user_id: CurrentUserId, db: SupabaseDep) -> dict:
     """Primera organización del usuario, del tipo que sea (para /me)."""
     miembros = (
@@ -122,3 +141,4 @@ def get_user_org(user_id: CurrentUserId, db: SupabaseDep) -> dict:
 ProviderOrgId = Annotated[str, Depends(get_provider_org_id)]
 PharmacyOrgId = Annotated[str, Depends(get_pharmacy_org_id)]
 UserOrg = Annotated[dict, Depends(get_user_org)]
+AdminUserId = Annotated[str, Depends(get_admin_user_id)]

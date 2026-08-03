@@ -42,12 +42,12 @@ export default function CuentaFarmaciaPage() {
         ) : (
           <>
             <Card className="mb-4 flex items-center gap-4 p-5">
-              <Avatar className="h-16 w-16 bg-teal-600 text-[22px]">{iniciales(me.organizacion.razon_social)}</Avatar>
+              <Avatar className="h-16 w-16 bg-teal-600 text-[22px]">{iniciales(me.organizacion?.razon_social ?? "F")}</Avatar>
               <div className="min-w-0">
-                <p className="truncate font-display text-[17px] font-bold leading-tight">{me.organizacion.razon_social}</p>
+                <p className="truncate font-display text-[17px] font-bold leading-tight">{me.organizacion?.razon_social}</p>
                 <div className="mt-1.5 flex items-center gap-2">
                   <Badge tone="teal">Farmacia</Badge>
-                  {me.organizacion.verificado && (
+                  {me.organizacion?.verificado && (
                     <Badge tone="green">
                       <BadgeCheck size={12} /> Verificada
                     </Badge>
@@ -58,8 +58,8 @@ export default function CuentaFarmaciaPage() {
 
             <p className="mb-2 px-1 text-[12px] font-semibold text-muted">ORGANIZACIÓN</p>
             <Card className="mb-4 divide-y divide-line">
-              <InfoRow icon={<Building2 size={17} />} label="NIT" value={me.organizacion.nit ?? "—"} />
-              <InfoRow icon={<MapPin size={17} />} label="Ciudad" value={me.organizacion.ciudad ?? "—"} />
+              <InfoRow icon={<Building2 size={17} />} label="NIT" value={me.organizacion?.nit ?? "—"} />
+              <InfoRow icon={<MapPin size={17} />} label="Ciudad" value={me.organizacion?.ciudad ?? "—"} />
             </Card>
 
             <p className="mb-2 px-1 text-[12px] font-semibold text-muted">USUARIO</p>

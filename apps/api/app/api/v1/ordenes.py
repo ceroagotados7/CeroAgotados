@@ -30,6 +30,22 @@ async def listar_ordenes(
     return ApiResponse(data=[Orden(**row) for row in (res.data or [])])
 
 
+@router.get("/resumen")
+async def resumen_ordenes(org_id: ProviderOrgId, db: SupabaseDep) -> ApiResponse[dict]:
+    """Conteo ligero para el badge de notificación (punto rojo del bottom-nav).
+
+    Declarado ANTES de /{orden_id} para que "resumen" no se capture como id.
+    """
+    res = (
+        db.table("ordenes")
+        .select("id", count="exact")
+        .eq("proveedor_id", org_id)
+        .eq("estado", "pendiente")
+        .execute()
+    )
+    return ApiResponse(data={"pendientes": res.count or 0})
+
+
 @router.get("/{orden_id}")
 async def detalle_orden(
     orden_id: str, org_id: ProviderOrgId, db: SupabaseDep

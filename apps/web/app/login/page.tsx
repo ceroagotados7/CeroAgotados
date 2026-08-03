@@ -49,7 +49,7 @@ export default function LoginPage() {
     clearMe();
     try {
       const me = await fetchMe();
-      router.push(me.organizacion.tipo === "farmacia" ? "/farmacia" : "/proveedor");
+      router.push(me.es_admin ? "/admin" : me.organizacion?.tipo === "farmacia" ? "/farmacia" : "/proveedor");
     } catch {
       router.push(ROLES.find((r) => r.rol === rol)!.ruta);
     }

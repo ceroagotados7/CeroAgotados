@@ -94,7 +94,7 @@ export default function CargaMasivaPage() {
 
   return (
     <>
-      <BackBar title="Carga masiva" subtitle={me?.organizacion.razon_social ?? " "} backHref="/proveedor/catalogo" />
+      <BackBar title="Carga masiva" subtitle={me?.organizacion?.razon_social ?? " "} backHref="/proveedor/catalogo" />
 
       <div className="px-5 pb-28 pt-1">
         {/* Plantilla */}

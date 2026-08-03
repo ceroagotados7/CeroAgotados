@@ -31,6 +31,10 @@ class Settings(BaseSettings):
 
     environment: str = "local"
 
+    # Comisión de plataforma (a3-ganancias). Simulada mientras el CEO decide
+    # el modelo de monetización definitivo; el mockup usa 6%.
+    comision_pct: float = 0.06
+
 
 @lru_cache
 def get_settings() -> Settings:

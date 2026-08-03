@@ -43,7 +43,7 @@ export default function BuscarPage() {
       <AppBar>
         <div className="min-w-0">
           <p className="mb-1 truncate text-[12px] leading-none text-muted">
-            Comprando como {me?.organizacion.razon_social ?? "…"}
+            Comprando como {me?.organizacion?.razon_social ?? "…"}
           </p>
           <p className="font-display text-[20px] font-extrabold leading-none">
             ¿Qué necesitas surtir hoy?
