@@ -101,3 +101,35 @@ class AdminResumen(BaseModel):
     """Conteo ligero para el badge del panel admin."""
 
     proveedores_en_revision: int
+    solicitudes_pendientes: int = 0
+
+
+class SolicitudMaestroAdmin(BaseModel):
+    """Solicitud de medicamento nuevo, vista por el admin."""
+
+    id: str
+    nombre: str
+    presentacion: str | None = None
+    unidades: str | None = None
+    estado: str
+    motivo_decision: str | None = None
+    proveedor: str  # razón social (el admin SÍ ve identidades)
+    created_at: str
+
+
+class SolicitudesAdminResult(BaseModel):
+    solicitudes: list[SolicitudMaestroAdmin]
+    conteos: dict[str, int]
+
+
+class DecisionSolicitudRequest(BaseModel):
+    accion: str  # 'agregada' | 'descartada'
+    motivo: str | None = None  # obligatorio al descartar
+    # Datos canónicos del producto (obligatorios al agregar al maestro).
+    nombre: str | None = None
+    principio_activo: str | None = None
+    concentracion: str | None = None
+    forma_farmaceutica: str | None = None
+    presentacion: str | None = None
+    laboratorio: str | None = None
+    categoria: str | None = None

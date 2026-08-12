@@ -1,39 +1,15 @@
 "use client";
 
 import { clsx } from "clsx";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 import { BottomNav, isMainTab } from "@/components/shell";
 import { Spinner } from "@/components/ui";
-import { fetchMe } from "@/lib/me";
-import { createClient } from "@/lib/supabase/client";
+import { useRoleGuard } from "@/lib/role-guard";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!data.session) {
-        router.replace("/login");
-        return;
-      }
-      // Solo el admin de plataforma entra aquí.
-      try {
-        const me = await fetchMe();
-        if (!me.es_admin) {
-          router.replace(me.organizacion?.tipo === "farmacia" ? "/farmacia" : "/proveedor");
-          return;
-        }
-        setReady(true);
-      } catch {
-        router.replace("/login");
-      }
-    });
-  }, [router, supabase]);
+  const ready = useRoleGuard("admin");
 
   if (!ready) return <Spinner />;
 

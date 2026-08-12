@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight, BarChart3, TrendingUp } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, FlaskConical, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -8,12 +8,13 @@ import { AppBar } from "@/components/shell";
 import { Avatar, Card, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cop, iniciales } from "@/lib/format";
-import type { AdminDashboard } from "@/lib/types";
+import type { AdminDashboard, AdminResumen } from "@/lib/types";
 
 const AVATAR_BG = ["bg-primary-700", "bg-teal-600", "bg-slate-500", "bg-amber-600", "bg-primary"];
 
 export default function AdminHome() {
   const [data, setData] = useState<AdminDashboard | null>(null);
+  const [resumen, setResumen] = useState<AdminResumen | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,6 +23,10 @@ export default function AdminHome() {
       .get<AdminDashboard>("/admin/dashboard")
       .then((d) => active && setData(d))
       .catch(() => active && setError("No se pudo cargar el panel."));
+    api
+      .get<AdminResumen>("/admin/resumen")
+      .then((r) => active && setResumen(r))
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -64,6 +69,29 @@ export default function AdminHome() {
           <Kpi valor={String(data.proveedores_activos)} label="Proveedores" />
           <Kpi valor={String(data.farmacias_activas)} label="Farmacias" />
         </div>
+
+        {/* Bandeja de curaduría del catálogo maestro */}
+        <Link href="/admin/solicitudes">
+          <Card className="mb-3 flex items-center gap-3 p-3.5">
+            <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+              <FlaskConical size={19} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13.5px] font-semibold leading-tight">Solicitudes de medicamentos</p>
+              <p className="mt-0.5 text-[12px] text-muted">
+                {resumen && resumen.solicitudes_pendientes > 0
+                  ? `${resumen.solicitudes_pendientes} pendiente${resumen.solicitudes_pendientes !== 1 ? "s" : ""} de curar`
+                  : "Nada pendiente por curar"}
+              </p>
+            </div>
+            {resumen && resumen.solicitudes_pendientes > 0 && (
+              <span className="flex h-6 min-w-6 flex-none items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-bold text-white">
+                {resumen.solicitudes_pendientes}
+              </span>
+            )}
+            <ArrowRight size={16} className="flex-none text-muted" />
+          </Card>
+        </Link>
 
         {/* Ventas por proveedor */}
         <p className="mb-2 px-1 text-[12px] font-semibold text-muted">VENTAS POR PROVEEDOR</p>

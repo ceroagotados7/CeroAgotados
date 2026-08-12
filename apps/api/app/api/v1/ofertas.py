@@ -11,6 +11,8 @@ from app.schemas.ofertas import (
     OfertaCreate,
     OfertaEliminada,
     OfertaUpdate,
+    SolicitudesMaestroRequest,
+    SolicitudesMaestroResult,
 )
 
 router = APIRouter(prefix="/ofertas", tags=["ofertas"])
@@ -143,6 +145,41 @@ def eliminar_oferta(
 
     db.table("ofertas").delete().eq("id", oferta_id).eq("organizacion_id", org_id).execute()
     return ApiResponse(data=OfertaEliminada(id=oferta_id))
+
+
+@router.post("/solicitudes-maestro", status_code=status.HTTP_201_CREATED)
+def solicitar_al_maestro(
+    payload: SolicitudesMaestroRequest,
+    org_id: ProviderOrgId,
+    user_id: CurrentUserId,
+    db: SupabaseDep,
+) -> ApiResponse[SolicitudesMaestroResult]:
+    """Registra medicamentos del archivo del proveedor que NO están en el
+    catálogo maestro, para que el equipo de la plataforma los cure y agregue
+    (bandeja del admin). Evita duplicar solicitudes pendientes idénticas."""
+    pendientes = (
+        db.table("solicitudes_maestro")
+        .select("nombre")
+        .eq("organizacion_id", org_id)
+        .eq("estado", "pendiente")
+        .execute()
+    ).data or []
+    ya = {p["nombre"].strip().lower() for p in pendientes}
+
+    filas = [
+        {
+            "organizacion_id": org_id,
+            "solicitado_por": user_id,
+            "nombre": item.nombre.strip(),
+            "presentacion": (item.presentacion or "").strip() or None,
+            "unidades": (item.unidades or "").strip() or None,
+        }
+        for item in payload.items
+        if item.nombre.strip().lower() not in ya
+    ]
+    if filas:
+        db.table("solicitudes_maestro").insert(filas).execute()
+    return ApiResponse(data=SolicitudesMaestroResult(registradas=len(filas)))
 
 
 @router.post("/bulk")

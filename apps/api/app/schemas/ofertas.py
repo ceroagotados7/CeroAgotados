@@ -46,3 +46,19 @@ class OfertaBulkResult(BaseModel):
 
 class OfertaEliminada(BaseModel):
     id: str
+
+
+class SolicitudMaestroItem(BaseModel):
+    """Un medicamento del archivo del proveedor que no matcheó con el maestro."""
+
+    nombre: Annotated[str, Field(min_length=2, max_length=200)]
+    presentacion: str | None = None
+    unidades: str | None = None
+
+
+class SolicitudesMaestroRequest(BaseModel):
+    items: Annotated[list[SolicitudMaestroItem], Field(min_length=1, max_length=200)]
+
+
+class SolicitudesMaestroResult(BaseModel):
+    registradas: int

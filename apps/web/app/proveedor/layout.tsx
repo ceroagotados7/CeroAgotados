@@ -1,25 +1,15 @@
 "use client";
 
 import { clsx } from "clsx";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
-import { Spinner } from "@/components/ui";
 import { BottomNav, isMainTab } from "@/components/shell";
-import { createClient } from "@/lib/supabase/client";
+import { Spinner } from "@/components/ui";
+import { useRoleGuard } from "@/lib/role-guard";
 
 export default function ProveedorLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) router.replace("/login");
-      else setReady(true);
-    });
-  }, [router, supabase]);
+  const ready = useRoleGuard("proveedor");
 
   if (!ready) return <Spinner />;
 

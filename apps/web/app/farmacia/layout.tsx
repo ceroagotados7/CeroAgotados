@@ -1,25 +1,15 @@
 "use client";
 
 import { clsx } from "clsx";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 import { BottomNav, isMainTab } from "@/components/shell";
 import { Spinner } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
+import { useRoleGuard } from "@/lib/role-guard";
 
 export default function FarmaciaLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) router.replace("/login");
-      else setReady(true);
-    });
-  }, [router, supabase]);
+  const ready = useRoleGuard("farmacia");
 
   if (!ready) return <Spinner />;
 

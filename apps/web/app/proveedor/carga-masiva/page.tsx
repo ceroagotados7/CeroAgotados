@@ -28,6 +28,8 @@ export default function CargaMasivaPage() {
   const [filas, setFilas] = useState<FilaAnalizada[] | null>(null);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [solicitando, setSolicitando] = useState(false);
+  const [solicitadas, setSolicitadas] = useState<number | null>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -73,6 +75,28 @@ export default function CargaMasivaPage() {
     errores: filas?.filter((f) => f.estado === "error").length ?? 0,
   };
   const importables = (filas ?? []).filter((f) => f.estado !== "error");
+  // Filas sin match: candidatas a SOLICITAR que la plataforma las agregue al maestro.
+  const sinMatch = (filas ?? []).filter((f) => f.error === "No está en el catálogo maestro");
+
+  async function solicitarAlMaestro() {
+    if (sinMatch.length === 0) return;
+    setSolicitando(true);
+    setError(null);
+    try {
+      const res = await api.post<{ registradas: number }>("/ofertas/solicitudes-maestro", {
+        items: sinMatch.map((f) => ({
+          nombre: f.nombre,
+          presentacion: f.presentacion || null,
+          unidades: f.unidades || null,
+        })),
+      });
+      setSolicitadas(res.registradas);
+    } catch (e) {
+      setError(e instanceof ApiCallError ? e.message : "No se pudieron enviar las solicitudes.");
+    } finally {
+      setSolicitando(false);
+    }
+  }
 
   async function importar() {
     if (importables.length === 0) return;
@@ -212,6 +236,34 @@ export default function CargaMasivaPage() {
               >
                 <Download size={14} /> Descargar reporte de errores
               </Button>
+            )}
+
+            {/* Medicamentos que no están en la base centralizada: el proveedor
+                pide que la plataforma los agregue (curaduría del admin). */}
+            {sinMatch.length > 0 && (
+              <Card className="mt-3 border border-teal-100 bg-teal-50/50 p-3.5">
+                {solicitadas === null ? (
+                  <>
+                    <p className="text-[13px] font-semibold text-teal-800">
+                      {sinMatch.length} medicamento{sinMatch.length !== 1 && "s"} no está
+                      {sinMatch.length !== 1 && "n"} en nuestra base centralizada
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-teal-700">
+                      Envíalos a nuestro equipo: los revisamos y, si aplica, los agregamos al
+                      catálogo maestro para que puedas ofertarlos.
+                    </p>
+                    <Button variant="teal" size="sm" block className="mt-2.5" disabled={solicitando} onClick={solicitarAlMaestro}>
+                      {solicitando ? "Enviando…" : `Solicitar que se agreguen (${sinMatch.length})`}
+                    </Button>
+                  </>
+                ) : (
+                  <p className="flex items-center gap-1.5 text-[13px] font-semibold text-teal-800">
+                    <Check size={15} /> {solicitadas > 0
+                      ? `${solicitadas} solicitud${solicitadas !== 1 ? "es" : ""} enviada${solicitadas !== 1 ? "s" : ""} al equipo. Te avisaremos en tu catálogo.`
+                      : "Ya habías solicitado estos medicamentos: están en revisión."}
+                  </p>
+                )}
+              </Card>
             )}
           </>
         )}

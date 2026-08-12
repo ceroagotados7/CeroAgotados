@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Eye, EyeOff, Factory, Lock, Mail, Plus, ShieldCheck, Store } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Plus, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,27 +9,12 @@ import { Button } from "@/components/ui";
 import { clearMe, fetchMe } from "@/lib/me";
 import { createClient } from "@/lib/supabase/client";
 
-type Rol = "proveedor" | "farmacia" | "admin";
-
-const ROLES: {
-  rol: Rol;
-  label: string;
-  icon: typeof Factory;
-  ruta: string;
-  chip: string;
-}[] = [
-  { rol: "proveedor", label: "Proveedor", icon: Factory, ruta: "/proveedor", chip: "bg-primary text-white" },
-  { rol: "farmacia", label: "Farmacia", icon: Store, ruta: "/farmacia", chip: "bg-teal-50 text-teal-700" },
-  { rol: "admin", label: "Admin", icon: BarChart3, ruta: "/admin", chip: "bg-slate-100 text-slate-600" },
-];
-
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [rol, setRol] = useState<Rol>("proveedor");
-  const [email, setEmail] = useState("proveedor1@cero.test");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,14 +29,17 @@ export default function LoginPage() {
       setError("Credenciales inválidas. Verifica el correo y la contraseña.");
       return;
     }
-    // Enruta por el tipo REAL de la organización (no por la pestaña elegida):
-    // evita que una farmacia caiga en el panel de proveedor o viceversa.
+    // El rol vive en la credencial: la app te lleva a TU interfaz
+    // (admin / proveedor / farmacia) según la organización de la cuenta.
     clearMe();
     try {
       const me = await fetchMe();
-      router.push(me.es_admin ? "/admin" : me.organizacion?.tipo === "farmacia" ? "/farmacia" : "/proveedor");
+      router.push(
+        me.es_admin ? "/admin" : me.organizacion?.tipo === "farmacia" ? "/farmacia" : "/proveedor",
+      );
     } catch {
-      router.push(ROLES.find((r) => r.rol === rol)!.ruta);
+      // Si /me falla momentáneamente, las guardas de rol de cada área corrigen el destino.
+      router.push("/proveedor");
     }
   }
 
@@ -80,30 +68,7 @@ export default function LoginPage() {
       {/* Card de acceso */}
       <div className="relative -mt-7 px-5 pb-8">
         <form onSubmit={onSubmit} className="card p-5">
-          <p className="label">Ingreso según tu rol</p>
-          <div className="mb-5 grid grid-cols-3 gap-2">
-            {ROLES.map(({ rol: r, label, icon: Icon, chip }) => {
-              const active = rol === r;
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRol(r)}
-                  aria-pressed={active}
-                  className={`flex flex-col items-center gap-1.5 rounded-2xl border py-3 transition ${
-                    active ? "border-2 border-primary bg-primary-50" : "border-line bg-surface"
-                  }`}
-                >
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${chip}`}>
-                    <Icon size={18} />
-                  </span>
-                  <span className={`text-[11.5px] font-semibold ${active ? "text-primary-800" : "text-muted"}`}>
-                    {label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <p className="mb-4 font-display text-[16px] font-bold">Inicia sesión</p>
 
           <label className="label" htmlFor="email">
             Correo corporativo
@@ -116,6 +81,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input pl-11"
+              placeholder="tu@empresa.com"
               autoComplete="email"
               required
             />

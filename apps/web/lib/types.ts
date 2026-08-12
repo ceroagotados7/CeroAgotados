@@ -230,6 +230,23 @@ export type ProveedoresAdminResult = {
 
 export type AdminResumen = {
   proveedores_en_revision: number;
+  solicitudes_pendientes: number;
+};
+
+export type SolicitudMaestroAdmin = {
+  id: string;
+  nombre: string;
+  presentacion?: string | null;
+  unidades?: string | null;
+  estado: "pendiente" | "agregada" | "descartada";
+  motivo_decision?: string | null;
+  proveedor: string;
+  created_at: string;
+};
+
+export type SolicitudesAdminResult = {
+  solicitudes: SolicitudMaestroAdmin[];
+  conteos: Record<string, number>;
 };
 
 export type AdminGanancias = {

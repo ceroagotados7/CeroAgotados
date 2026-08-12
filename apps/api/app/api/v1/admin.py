@@ -11,9 +11,12 @@ from app.schemas.admin import (
     AdminProveedorDetalle,
     AdminResumen,
     DecisionProveedorRequest,
+    DecisionSolicitudRequest,
     MargenProducto,
     ProveedorAdminItem,
     ProveedoresAdminResult,
+    SolicitudesAdminResult,
+    SolicitudMaestroAdmin,
     TransaccionReciente,
     VentaFarmaciaDeProveedor,
     VentaOrg,
@@ -123,7 +126,109 @@ def admin_resumen(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[AdminResum
         .eq("estado_verificacion", "en_revision")
         .execute()
     )
-    return ApiResponse(data=AdminResumen(proveedores_en_revision=res.count or 0))
+    sol = (
+        db.table("solicitudes_maestro")
+        .select("id", count="exact")
+        .eq("estado", "pendiente")
+        .execute()
+    )
+    return ApiResponse(
+        data=AdminResumen(
+            proveedores_en_revision=res.count or 0,
+            solicitudes_pendientes=sol.count or 0,
+        )
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Solicitudes al catálogo maestro (curaduría de la plataforma)
+# --------------------------------------------------------------------------- #
+
+_SOL_SELECT = "id, nombre, presentacion, unidades, estado, motivo_decision, created_at, organizacion:organizaciones(razon_social)"
+
+
+def _a_solicitud(row: dict) -> SolicitudMaestroAdmin:
+    return SolicitudMaestroAdmin(
+        **{k: row[k] for k in ("id", "nombre", "presentacion", "unidades", "estado", "motivo_decision", "created_at")},
+        proveedor=(row.get("organizacion") or {}).get("razon_social", "Proveedor"),
+    )
+
+
+@router.get("/solicitudes")
+def admin_solicitudes(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[SolicitudesAdminResult]:
+    """Bandeja de medicamentos solicitados por proveedores para el maestro."""
+    filas = (
+        db.table("solicitudes_maestro")
+        .select(_SOL_SELECT)
+        .order("created_at", desc=True)
+        .limit(200)
+        .execute()
+    ).data or []
+    conteos: dict[str, int] = {"pendiente": 0, "agregada": 0, "descartada": 0}
+    for f in filas:
+        conteos[f["estado"]] = conteos.get(f["estado"], 0) + 1
+    return ApiResponse(
+        data=SolicitudesAdminResult(solicitudes=[_a_solicitud(f) for f in filas], conteos=conteos)
+    )
+
+
+@router.post("/solicitudes/{solicitud_id}/decision")
+def admin_decidir_solicitud(
+    solicitud_id: str,
+    payload: DecisionSolicitudRequest,
+    admin: AdminUserId,
+    db: SupabaseDep,
+) -> ApiResponse[SolicitudMaestroAdmin]:
+    """Cura una solicitud: la AGREGA al maestro (creando el producto canónico
+    con los datos que defina el admin) o la DESCARTA con motivo."""
+    if payload.accion not in ("agregada", "descartada"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "accion_invalida")
+
+    sol = (
+        db.table("solicitudes_maestro").select("id, estado").eq("id", solicitud_id).execute()
+    ).data
+    if not sol:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "solicitud_no_encontrada")
+    if sol[0]["estado"] != "pendiente":
+        raise HTTPException(status.HTTP_409_CONFLICT, "solicitud_ya_decidida")
+
+    producto_id: str | None = None
+    if payload.accion == "agregada":
+        if not (payload.nombre or "").strip():
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "nombre_obligatorio")
+        producto = (
+            db.table("producto_maestro")
+            .insert(
+                {
+                    "nombre": payload.nombre.strip(),
+                    "principio_activo": (payload.principio_activo or "").strip() or None,
+                    "concentracion": (payload.concentracion or "").strip() or None,
+                    "forma_farmaceutica": (payload.forma_farmaceutica or "").strip() or None,
+                    "presentacion": (payload.presentacion or "").strip() or None,
+                    "laboratorio": (payload.laboratorio or "").strip() or None,
+                    "categoria": (payload.categoria or "").strip() or None,
+                    "activo": True,
+                }
+            )
+            .execute()
+        )
+        producto_id = producto.data[0]["id"]
+    elif not (payload.motivo or "").strip():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "motivo_obligatorio")
+
+    db.table("solicitudes_maestro").update(
+        {
+            "estado": payload.accion,
+            "decidido_por": admin,
+            "motivo_decision": (payload.motivo or "").strip() or None,
+            "producto_creado_id": producto_id,
+        }
+    ).eq("id", solicitud_id).execute()
+
+    fila = (
+        db.table("solicitudes_maestro").select(_SOL_SELECT).eq("id", solicitud_id).single().execute()
+    ).data
+    return ApiResponse(data=_a_solicitud(fila))
 
 
 @router.get("/proveedores")
