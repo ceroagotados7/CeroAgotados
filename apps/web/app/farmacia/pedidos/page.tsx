@@ -4,7 +4,7 @@ import { ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { AppBar } from "@/components/shell";
+import { AppBar, refrescarBadge } from "@/components/shell";
 import { Avatar, Badge, Card, Chip, EmptyState, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace } from "@/lib/format";
@@ -24,6 +24,8 @@ export default function MisPedidosPage() {
       .get<PedidoFarmacia[]>("/farmacia/pedidos")
       .then((d) => active && setPedidos(d))
       .catch(() => active && setPedidos([]));
+    // Abrir la bandeja = leer las novedades: marca visto y apaga el punto rojo.
+    api.post("/farmacia/pedidos/visto").then(refrescarBadge).catch(() => {});
     return () => {
       active = false;
     };

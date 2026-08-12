@@ -16,13 +16,13 @@ if _ENV_TEST.exists():
 # así que forzamos entorno local ANTES de importar la config (env var > .env).
 os.environ["ENVIRONMENT"] = "local"
 
-import pytest
-from fastapi.testclient import TestClient
-from jose import jwt
+import pytest  # noqa: E402 — el entorno debe fijarse ANTES de importar la app
+from fastapi.testclient import TestClient  # noqa: E402
+from jose import jwt  # noqa: E402
 
-from app.config import settings
-from app.main import app
-from app.supabase_client import get_service_client
+from app.config import settings  # noqa: E402
+from app.main import app  # noqa: E402
+from app.supabase_client import get_service_client  # noqa: E402
 
 # UUIDs de los usuarios semilla (ver supabase/seed.sql).
 USER_PROVEEDOR1 = "0000000d-0000-0000-0000-000000000001"

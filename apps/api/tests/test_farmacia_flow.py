@@ -251,3 +251,41 @@ def test_registro_farmacia_y_login_flow(client):
     db.table("miembros_organizacion").delete().eq("organizacion_id", org_id).execute()
     db.table("organizaciones").delete().eq("id", org_id).execute()
     db.auth.admin.delete_user(r.json()["data"]["user_id"])
+
+
+# --------------------------------------------------------------------------- #
+# Novedades (punto rojo de la farmacia)
+# --------------------------------------------------------------------------- #
+
+def test_novedades_cuando_proveedor_responde(client, headers_farmacia1, headers_proveedor1, limpiar_pedidos_nuevos):
+    """El punto rojo de la farmacia se enciende cuando el proveedor responde
+    su pedido, y se apaga al marcar la bandeja como vista."""
+    # Bandeja al día.
+    assert client.post("/v1/farmacia/pedidos/visto", headers=headers_farmacia1).status_code == 200
+    assert client.get("/v1/farmacia/resumen", headers=headers_farmacia1).json()["data"]["novedades"] == 0
+
+    # La farmacia pide; mientras el proveedor no responda, NO hay novedad.
+    of = _ofertas_de(ORG_PROVEEDOR1)[0]
+    r = client.post(
+        "/v1/farmacia/pedido",
+        json={"items": [{"oferta_id": of["id"], "cantidad": 1}]},
+        headers=headers_farmacia1,
+    )
+    orden_id = r.json()["data"]["ordenes"][0]["orden_id"]
+    assert client.get("/v1/farmacia/resumen", headers=headers_farmacia1).json()["data"]["novedades"] == 0
+
+    # El proveedor acepta parcialmente → novedad para la farmacia.
+    detalle = client.get(f"/v1/ordenes/{orden_id}", headers=headers_proveedor1).json()["data"]
+    decisiones = [
+        {"item_id": i["id"], "estado": "aceptado", "cantidad_aceptada": i["cantidad_solicitada"]}
+        for i in detalle["items"]
+    ]
+    client.post(f"/v1/ordenes/{orden_id}/aceptar", json={"decisiones": decisiones}, headers=headers_proveedor1)
+    assert client.get("/v1/farmacia/resumen", headers=headers_farmacia1).json()["data"]["novedades"] == 1
+
+    # Abrir la bandeja (marcar visto) apaga el punto rojo.
+    client.post("/v1/farmacia/pedidos/visto", headers=headers_farmacia1)
+    assert client.get("/v1/farmacia/resumen", headers=headers_farmacia1).json()["data"]["novedades"] == 0
+
+    # Un proveedor no puede usar los endpoints de novedades de farmacia.
+    assert client.get("/v1/farmacia/resumen", headers=headers_proveedor1).status_code == 403

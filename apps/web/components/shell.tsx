@@ -76,34 +76,43 @@ export function isMainTab(pathname: string): boolean {
   return MAIN_TAB_HREFS.has(pathname);
 }
 
+/** Evento para forzar el refresco del punto rojo (p. ej. tras marcar visto). */
+export const EVENTO_BADGE = "ca-badge-refresh";
+export function refrescarBadge(): void {
+  window.dispatchEvent(new Event(EVENTO_BADGE));
+}
+
 /** Conteo de notificaciones del rol (punto rojo). Se refresca al montar, al
- *  volver el foco a la pestaña y cada 30 s — aparece sin recargar.
- *  Proveedor: órdenes pendientes. Admin: proveedores en revisión. */
+ *  volver el foco a la pestaña, cada 30 s y ante EVENTO_BADGE.
+ *  Proveedor: órdenes pendientes. Farmacia: pedidos respondidos sin leer.
+ *  Admin: proveedores en revisión. */
 function usePendientes(rol: "proveedor" | "farmacia" | "admin"): number {
   const [n, setN] = useState(0);
   useEffect(() => {
-    if (rol === "farmacia") return;
     let vivo = true;
-    const tick = () =>
-      rol === "proveedor"
-        ? api
-            .get<{ pendientes: number }>("/ordenes/resumen")
-            .then((d) => vivo && setN(d.pendientes))
-            .catch(() => {})
-        : api
-            .get<{ proveedores_en_revision: number }>("/admin/resumen")
-            .then((d) => vivo && setN(d.proveedores_en_revision))
-            .catch(() => {});
+    const tick = () => {
+      const consulta =
+        rol === "proveedor"
+          ? api.get<{ pendientes: number }>("/ordenes/resumen").then((d) => d.pendientes)
+          : rol === "farmacia"
+            ? api.get<{ novedades: number }>("/farmacia/resumen").then((d) => d.novedades)
+            : api
+                .get<{ proveedores_en_revision: number }>("/admin/resumen")
+                .then((d) => d.proveedores_en_revision);
+      consulta.then((v) => vivo && setN(v)).catch(() => {});
+    };
     tick();
     const cada30s = setInterval(tick, 30_000);
     window.addEventListener("focus", tick);
+    window.addEventListener(EVENTO_BADGE, tick);
     return () => {
       vivo = false;
       clearInterval(cada30s);
       window.removeEventListener("focus", tick);
+      window.removeEventListener(EVENTO_BADGE, tick);
     };
   }, [rol]);
-  return rol === "farmacia" ? 0 : n;
+  return n;
 }
 
 /** Bottom-nav flotante de 4 tabs, constreñido a la columna móvil. */
@@ -117,7 +126,8 @@ export function BottomNav({ rol = "proveedor" }: { rol?: "proveedor" | "farmacia
       {tabs.map(({ href, label, icon: Icon }) => {
         const active = href === home ? pathname === href : pathname.startsWith(href);
         const conBadge =
-          (href === "/proveedor/ordenes" || href === "/admin/proveedores") && pendientes > 0;
+          (href === "/proveedor/ordenes" || href === "/admin/proveedores" || href === "/farmacia/pedidos") &&
+          pendientes > 0;
         return (
           <Link key={href} href={href} className={`navitem ${active ? "active" : ""}`}>
             <span className="relative">

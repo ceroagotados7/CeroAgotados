@@ -92,7 +92,7 @@ export default function AgregarPage() {
         </p>
       </div>
 
-      <div className="px-5 pb-28 pt-1">
+      <div className="px-5 pb-44 pt-1">
         {!resultados ? (
           <Spinner />
         ) : resultados.length === 0 ? (
@@ -176,7 +176,7 @@ export default function AgregarPage() {
 
       {/* Footer sticky: contador + CTA */}
       <div
-        className="fixed bottom-0 left-1/2 z-20 flex w-full max-w-[430px] -translate-x-1/2 items-center gap-3 border-t border-line bg-surface px-5 py-3.5"
+        className="fixed bottom-20 left-1/2 z-20 flex w-full max-w-[430px] -translate-x-1/2 items-center gap-3 border-t border-line bg-surface px-5 py-3.5"
         style={{ boxShadow: "0 -6px 20px rgba(15,23,42,.05)" }}
       >
         <div className="flex-none">
@@ -188,7 +188,7 @@ export default function AgregarPage() {
         </Button>
       </div>
       {error && (
-        <p className="fixed bottom-20 left-1/2 z-20 -translate-x-1/2 text-sm text-danger">{error}</p>
+        <p className="fixed bottom-40 left-1/2 z-20 -translate-x-1/2 text-sm text-danger">{error}</p>
       )}
     </>
   );

@@ -120,7 +120,7 @@ export default function CargaMasivaPage() {
     <>
       <BackBar title="Carga masiva" subtitle={me?.organizacion?.razon_social ?? " "} backHref="/proveedor/catalogo" />
 
-      <div className="px-5 pb-28 pt-1">
+      <div className="px-5 pb-44 pt-1">
         {/* Plantilla */}
         <Card className="mb-3 flex items-center gap-3 p-3.5">
           <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-teal-50 text-teal-700">
@@ -274,7 +274,7 @@ export default function CargaMasivaPage() {
       {/* Footer sticky */}
       {filas && importables.length > 0 && (
         <div
-          className="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-surface px-5 py-3.5"
+          className="fixed bottom-20 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-surface px-5 py-3.5"
           style={{ boxShadow: "0 -6px 20px rgba(15,23,42,.05)" }}
         >
           <Button size="lg" block disabled={importing} onClick={importar}>

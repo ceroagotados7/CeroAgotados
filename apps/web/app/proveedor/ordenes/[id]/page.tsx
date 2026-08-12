@@ -116,7 +116,7 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
         backHref="/proveedor/ordenes"
       />
 
-      <div className="px-5 pb-36 pt-1">
+      <div className="px-5 pb-56 pt-1">
         {/* Farmacia */}
         <Card className="mb-3 flex items-center gap-3 p-3.5">
           <Avatar className="h-10 w-10 bg-teal-600 text-[13px]">{iniciales(orden.farmacia?.razon_social ?? "F")}</Avatar>
@@ -176,7 +176,7 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
 
       {/* Acciones sticky */}
       <div
-        className="fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 space-y-2.5 border-t border-line bg-surface px-5 py-3.5"
+        className="fixed bottom-20 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 space-y-2.5 border-t border-line bg-surface px-5 py-3.5"
         style={{ boxShadow: "0 -6px 20px rgba(15,23,42,.05)" }}
       >
         {editable ? (

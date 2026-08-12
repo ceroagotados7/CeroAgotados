@@ -3,7 +3,7 @@
 import { CheckCircle2, FlaskConical, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { AppBar } from "@/components/shell";
+import { BackBar } from "@/components/shell";
 import { Badge, Button, Card, Chip, EmptyState, Input, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { hace } from "@/lib/format";
@@ -37,12 +37,7 @@ export default function SolicitudesAdminPage() {
 
   return (
     <>
-      <AppBar>
-        <div className="min-w-0">
-          <p className="mb-1 text-[12px] leading-none text-muted">Catálogo maestro</p>
-          <p className="font-display text-[20px] font-extrabold leading-none">Solicitudes de medicamentos</p>
-        </div>
-      </AppBar>
+      <BackBar title="Solicitudes de medicamentos" subtitle="Catálogo maestro" backHref="/admin" />
 
       <div className="px-5">
         <div className="no-scrollbar mb-1 flex gap-2 overflow-x-auto pb-1">

@@ -229,6 +229,43 @@ def crear_pedido(
 
 
 # --------------------------------------------------------------------------- #
+# Novedades (punto rojo): pedidos respondidos por el proveedor sin ver aún
+# --------------------------------------------------------------------------- #
+
+# Estados que fija el PROVEEDOR (los de la farmacia — cancelada/completada —
+# no cuentan como novedad: los provocó ella misma).
+_ESTADOS_NOVEDAD = ["aceptada_parcial", "aceptada_total", "rechazada", "despachada"]
+
+
+@router.get("/resumen")
+def resumen_farmacia(
+    org_id: PharmacyOrgId, user_id: CurrentUserId, db: SupabaseDep
+) -> ApiResponse[dict]:
+    """Conteo ligero para el badge del tab "Mis pedidos" (novedades sin leer)."""
+    visto = (
+        db.table("profiles").select("pedidos_vistos_at").eq("id", user_id).single().execute()
+    ).data["pedidos_vistos_at"]
+    res = (
+        db.table("ordenes")
+        .select("id", count="exact")
+        .eq("farmacia_id", org_id)
+        .in_("estado", _ESTADOS_NOVEDAD)
+        .gt("updated_at", visto)
+        .execute()
+    )
+    return ApiResponse(data={"novedades": res.count or 0})
+
+
+@router.post("/pedidos/visto")
+def marcar_pedidos_vistos(
+    org_id: PharmacyOrgId, user_id: CurrentUserId, db: SupabaseDep
+) -> ApiResponse[dict]:
+    """Marca la bandeja como vista (se llama al abrir "Mis pedidos")."""
+    db.table("profiles").update({"pedidos_vistos_at": "now()"}).eq("id", user_id).execute()
+    return ApiResponse(data={"ok": True})
+
+
+# --------------------------------------------------------------------------- #
 # Mis pedidos (f5, f6) — sin identidad del proveedor
 # --------------------------------------------------------------------------- #
 
