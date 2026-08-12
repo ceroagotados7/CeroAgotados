@@ -36,6 +36,22 @@ def _alias_proveedor(org_id: str) -> str:
     return f"Proveedor {tag}"
 
 
+def _proveedores_al_aire(db) -> list[str]:
+    """Ids de proveedores APROBADOS por el admin: solo sus ofertas se comparan.
+
+    Gate 'on live': un proveedor en revisión/rechazado/suspendido puede tener
+    catálogo, pero las farmacias no lo ven (regla de negocio del fundador).
+    """
+    res = (
+        db.table("organizaciones")
+        .select("id")
+        .eq("tipo", "proveedor")
+        .eq("estado_verificacion", "aprobado")
+        .execute()
+    )
+    return [r["id"] for r in (res.data or [])]
+
+
 # --------------------------------------------------------------------------- #
 # Búsqueda y comparación (f1, f2) — SIN identidad del proveedor
 # --------------------------------------------------------------------------- #
@@ -50,11 +66,15 @@ def buscar_productos(
 ) -> ApiResponse[list[ProductoBusqueda]]:
     """Productos del maestro que tienen ofertas activas con stock, con el número
     de opciones y el precio "desde" (f1). Nunca expone qué proveedores ofertan."""
+    al_aire = _proveedores_al_aire(db)
+    if not al_aire:
+        return ApiResponse(data=[])
     ofertas = (
         db.table("ofertas")
         .select("producto_maestro_id, precio")
         .eq("activo", True)
         .gt("stock_disponible", 0)
+        .in_("organizacion_id", al_aire)
         .execute()
     ).data or []
 
@@ -104,15 +124,21 @@ def comparar_producto(
     if not prod.data:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "producto_no_encontrado")
 
+    al_aire = _proveedores_al_aire(db)
     ofertas = (
-        db.table("ofertas")
-        .select("id, organizacion_id, precio, stock_disponible")
-        .eq("producto_maestro_id", producto_id)
-        .eq("activo", True)
-        .gt("stock_disponible", 0)
-        .order("precio")
-        .execute()
-    ).data or []
+        (
+            db.table("ofertas")
+            .select("id, organizacion_id, precio, stock_disponible")
+            .eq("producto_maestro_id", producto_id)
+            .eq("activo", True)
+            .gt("stock_disponible", 0)
+            .in_("organizacion_id", al_aire)
+            .order("precio")
+            .execute()
+        ).data
+        if al_aire
+        else []
+    ) or []
 
     precios = [float(o["precio"]) for o in ofertas]
     mejor = precios[0] if precios else None
@@ -158,6 +184,16 @@ def crear_pedido(
     ids = [i.oferta_id for i in payload.items]
     if len(set(ids)) != len(ids):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "oferta_repetida_en_pedido")
+
+    # Gate "on live": ninguna oferta puede ser de un proveedor fuera del aire
+    # (cubre el caso de un proveedor suspendido con carritos abiertos).
+    al_aire = set(_proveedores_al_aire(db))
+    duenos = (
+        db.table("ofertas").select("id, organizacion_id").in_("id", ids).execute()
+    ).data or []
+    fuera = [o["id"] for o in duenos if o["organizacion_id"] not in al_aire]
+    if fuera or len(duenos) != len(ids):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "oferta_no_disponible")
 
     try:
         res = db.rpc(

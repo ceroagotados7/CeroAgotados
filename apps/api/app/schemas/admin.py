@@ -72,3 +72,32 @@ class AdminGanancias(BaseModel):
     margen_por_orden: float
     margen_por_producto: list[MargenProducto]
     ultimas_transacciones: list[TransaccionReciente]
+
+
+class ProveedorAdminItem(BaseModel):
+    """Fila de la bandeja de verificación de proveedores."""
+
+    id: str
+    razon_social: str
+    nit: str | None = None
+    ciudad: str | None = None
+    estado_verificacion: str
+    motivo_decision: str | None = None
+    created_at: str
+    medicamentos: int
+
+
+class ProveedoresAdminResult(BaseModel):
+    proveedores: list[ProveedorAdminItem]
+    conteos: dict[str, int]  # por estado_verificacion
+
+
+class DecisionProveedorRequest(BaseModel):
+    accion: str  # 'aprobado' | 'rechazado' | 'suspendido'
+    motivo: str | None = None  # obligatorio al rechazar/suspender
+
+
+class AdminResumen(BaseModel):
+    """Conteo ligero para el badge del panel admin."""
+
+    proveedores_en_revision: int

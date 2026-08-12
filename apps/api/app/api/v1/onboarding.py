@@ -56,6 +56,7 @@ def _registrar_organizacion(
     user_id = user.id
 
     # 2) Organización. Si falla, revertimos el usuario (sin huérfanos).
+    # Proveedores nacen EN REVISIÓN (gate del admin); las farmacias entran directo.
     try:
         org_res = (
             db.table("organizaciones")
@@ -65,6 +66,7 @@ def _registrar_organizacion(
                     "razon_social": payload.razon_social,
                     "nit": payload.nit,
                     "ciudad": payload.ciudad,
+                    "estado_verificacion": "aprobado" if tipo == "farmacia" else "en_revision",
                 }
             )
             .execute()
@@ -86,5 +88,10 @@ def _registrar_organizacion(
         db.table("organizaciones").delete().eq("id", org_id).execute()
         db.auth.admin.delete_user(user_id)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "no_se_pudo_crear_membresia") from exc
+
+    # Bitácora: arranca el expediente de la organización.
+    db.table("organizacion_eventos").insert(
+        {"organizacion_id": org_id, "actor_id": user_id, "tipo": "registrada", "payload": {}}
+    ).execute()
 
     return ApiResponse(data=RegistroProveedorResult(user_id=user_id, organizacion_id=org_id))

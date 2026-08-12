@@ -9,7 +9,11 @@ from app.schemas.admin import (
     AdminDashboard,
     AdminGanancias,
     AdminProveedorDetalle,
+    AdminResumen,
+    DecisionProveedorRequest,
     MargenProducto,
+    ProveedorAdminItem,
+    ProveedoresAdminResult,
     TransaccionReciente,
     VentaFarmaciaDeProveedor,
     VentaOrg,
@@ -100,6 +104,111 @@ def admin_dashboard(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[AdminDas
             top_farmacias=_top(por_farmacia, 3),
         )
     )
+
+
+# --------------------------------------------------------------------------- #
+# Verificación de proveedores (gate "on live")
+# --------------------------------------------------------------------------- #
+
+_DECISIONES_VALIDAS = {"aprobado", "rechazado", "suspendido"}
+
+
+@router.get("/resumen")
+def admin_resumen(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[AdminResumen]:
+    """Conteo ligero para el badge de notificación del panel admin."""
+    res = (
+        db.table("organizaciones")
+        .select("id", count="exact")
+        .eq("tipo", "proveedor")
+        .eq("estado_verificacion", "en_revision")
+        .execute()
+    )
+    return ApiResponse(data=AdminResumen(proveedores_en_revision=res.count or 0))
+
+
+@router.get("/proveedores")
+def admin_proveedores(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[ProveedoresAdminResult]:
+    """Bandeja de verificación: todos los proveedores con su estado y conteos."""
+    orgs = (
+        db.table("organizaciones")
+        .select("id, razon_social, nit, ciudad, estado_verificacion, motivo_decision, created_at")
+        .eq("tipo", "proveedor")
+        .order("created_at", desc=True)
+        .execute()
+    ).data or []
+
+    ofertas = (
+        db.table("ofertas").select("organizacion_id").execute()
+    ).data or []
+    n_ofertas: dict[str, int] = {}
+    for o in ofertas:
+        n_ofertas[o["organizacion_id"]] = n_ofertas.get(o["organizacion_id"], 0) + 1
+
+    conteos: dict[str, int] = {"en_revision": 0, "aprobado": 0, "rechazado": 0, "suspendido": 0}
+    filas = []
+    for o in orgs:
+        conteos[o["estado_verificacion"]] = conteos.get(o["estado_verificacion"], 0) + 1
+        filas.append(
+            ProveedorAdminItem(**o, medicamentos=n_ofertas.get(o["id"], 0))
+        )
+    return ApiResponse(data=ProveedoresAdminResult(proveedores=filas, conteos=conteos))
+
+
+@router.post("/proveedores/{proveedor_id}/decision")
+def admin_decidir_proveedor(
+    proveedor_id: str,
+    payload: DecisionProveedorRequest,
+    admin: AdminUserId,
+    db: SupabaseDep,
+) -> ApiResponse[ProveedorAdminItem]:
+    """Aprueba, rechaza o suspende a un proveedor. Motivo obligatorio salvo aprobar.
+
+    Al aprobar, sus ofertas entran a la comparación de las farmacias; al
+    rechazar/suspender salen del aire (el catálogo del proveedor se conserva).
+    """
+    if payload.accion not in _DECISIONES_VALIDAS:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "accion_invalida")
+    if payload.accion != "aprobado" and not (payload.motivo or "").strip():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "motivo_obligatorio")
+
+    org = (
+        db.table("organizaciones")
+        .select("id, tipo")
+        .eq("id", proveedor_id)
+        .execute()
+    ).data
+    if not org or org[0]["tipo"] != "proveedor":
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "proveedor_no_encontrado")
+
+    motivo = (payload.motivo or "").strip() or None
+    db.table("organizaciones").update(
+        {
+            "estado_verificacion": payload.accion,
+            "verificado": payload.accion == "aprobado",
+            "motivo_decision": motivo,
+        }
+    ).eq("id", proveedor_id).execute()
+
+    db.table("organizacion_eventos").insert(
+        {
+            "organizacion_id": proveedor_id,
+            "actor_id": admin,
+            "tipo": payload.accion,
+            "payload": {"motivo": motivo} if motivo else {},
+        }
+    ).execute()
+
+    fila = (
+        db.table("organizaciones")
+        .select("id, razon_social, nit, ciudad, estado_verificacion, motivo_decision, created_at")
+        .eq("id", proveedor_id)
+        .single()
+        .execute()
+    ).data
+    n = (
+        db.table("ofertas").select("id", count="exact").eq("organizacion_id", proveedor_id).execute()
+    ).count or 0
+    return ApiResponse(data=ProveedorAdminItem(**fila, medicamentos=n))
 
 
 @router.get("/proveedores/{proveedor_id}")

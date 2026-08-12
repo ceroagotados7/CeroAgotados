@@ -8,6 +8,9 @@ class Organizacion(BaseModel):
     nit: str | None = None
     ciudad: str | None = None
     verificado: bool
+    # Gate "on live": en_revision | aprobado | rechazado | suspendido.
+    estado_verificacion: str = "aprobado"
+    motivo_decision: str | None = None
 
 
 class Perfil(BaseModel):

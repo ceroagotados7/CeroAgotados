@@ -94,6 +94,8 @@ export type ProveedorDashboard = {
   ordenes_recientes: OrdenReciente[];
 };
 
+export type EstadoVerificacion = "en_revision" | "aprobado" | "rechazado" | "suspendido";
+
 export type Organizacion = {
   id: string;
   tipo: string;
@@ -101,6 +103,8 @@ export type Organizacion = {
   nit?: string | null;
   ciudad?: string | null;
   verificado: boolean;
+  estado_verificacion: EstadoVerificacion;
+  motivo_decision?: string | null;
 };
 
 export type Perfil = {
@@ -206,6 +210,26 @@ export type AdminProveedorDetalle = {
   ordenes_mes: number;
   farmacias: number;
   ventas_por_farmacia: { nombre: string; total: number; ordenes: number; pct_del_proveedor: number }[];
+};
+
+export type ProveedorAdminItem = {
+  id: string;
+  razon_social: string;
+  nit?: string | null;
+  ciudad?: string | null;
+  estado_verificacion: EstadoVerificacion;
+  motivo_decision?: string | null;
+  created_at: string;
+  medicamentos: number;
+};
+
+export type ProveedoresAdminResult = {
+  proveedores: ProveedorAdminItem[];
+  conteos: Record<string, number>;
+};
+
+export type AdminResumen = {
+  proveedores_en_revision: number;
 };
 
 export type AdminGanancias = {

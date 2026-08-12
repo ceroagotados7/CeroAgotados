@@ -191,6 +191,13 @@ export default function RegistroPage() {
 
           {error && <p className="mb-3 text-sm text-danger">{error}</p>}
 
+          {tipo === "proveedor" && (
+            <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+              Tu cuenta quedará <b>en revisión</b> del equipo de Cero Agotados. Podrás armar tu
+              catálogo de inmediato; será visible para las farmacias cuando te aprobemos.
+            </p>
+          )}
+
           <Button type="submit" size="lg" block disabled={loading}>
             {loading ? "Creando cuenta…" : "Crear cuenta"} <ArrowRight size={18} />
           </Button>
