@@ -195,7 +195,8 @@ function OrdenPendiente({
       {confirmaRechazo ? (
         <div>
           <p className="mb-2 text-center text-[12.5px] text-muted">
-            ¿Rechazar la orden completa? La farmacia podrá pedir a otro proveedor.
+            ¿Rechazar la orden completa? La farmacia podrá pedir a otro proveedor y asumiremos
+            estos productos como agotados: tus ofertas quedarán en stock 0.
           </p>
           <div className="flex gap-2.5">
             <Button variant="outline" size="md" className="flex-1" disabled={busy} onClick={() => setConfirmaRechazo(false)}>

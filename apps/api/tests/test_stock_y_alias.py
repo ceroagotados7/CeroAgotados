@@ -103,9 +103,11 @@ def test_stock_se_descuenta_al_crear_y_vuelve_al_cancelar(
     assert _stock(of["id"]) == inicial
 
 
-def test_aceptacion_parcial_devuelve_la_diferencia(
+def test_aceptacion_parcial_asume_agotado(
     client, headers_farmacia1, headers_proveedor1, limpiar_pedidos_nuevos
 ):
+    """Regla del fundador: despachar MENOS de lo pedido es señal de agotado
+    real → la oferta queda en stock 0 (no se devuelve la diferencia)."""
     of = _oferta_con_stock(4)
     inicial = of["stock_disponible"]
 
@@ -118,19 +120,35 @@ def test_aceptacion_parcial_devuelve_la_diferencia(
                     [{"item_id": item["id"], "estado": "aceptado", "cantidad_aceptada": 2}])
     assert r_ac.status_code == 200, r_ac.text
     assert r_ac.json()["data"]["estado"] == "aceptada_parcial"
-    # Se consumen 2, se devuelven 2.
-    assert _stock(of["id"]) == inicial - 2
+    assert _stock(of["id"]) == 0  # parcial → agotado
 
-    # Despachar no mueve más stock (ya quedó consumido al aceptar).
+    # Despachar no mueve más stock.
     assert client.post(f"/v1/ordenes/{orden_id}/despachar", headers=headers_proveedor1).status_code == 200
-    assert _stock(of["id"]) == inicial - 2
+    assert _stock(of["id"]) == 0
 
 
-def test_rechazo_generico_devuelve_todo(
+def test_aceptacion_completa_conserva_el_resto(
     client, headers_farmacia1, headers_proveedor1, limpiar_pedidos_nuevos
 ):
-    of = _oferta_con_stock(2)
+    """Aceptar TODO lo pedido consume solo la reserva: el resto queda intacto."""
+    of = _oferta_con_stock(3)
     inicial = of["stock_disponible"]
+
+    r = _pedir(client, headers_farmacia1, of["id"], 2)
+    orden_id = r.json()["data"]["ordenes"][0]["orden_id"]
+    item = _item_unico(client, headers_proveedor1, orden_id)
+    r_ac = _decidir(client, headers_proveedor1, orden_id,
+                    [{"item_id": item["id"], "estado": "aceptado", "cantidad_aceptada": 2}])
+    assert r_ac.status_code == 200, r_ac.text
+    assert r_ac.json()["data"]["estado"] == "aceptada_total"
+    assert _stock(of["id"]) == inicial - 2
+
+
+def test_rechazo_asume_agotado(
+    client, headers_farmacia1, headers_proveedor1, limpiar_pedidos_nuevos
+):
+    """Cualquier rechazo del proveedor → la oferta queda en stock 0."""
+    of = _oferta_con_stock(2)
 
     r = _pedir(client, headers_farmacia1, of["id"], 2)
     orden_id = r.json()["data"]["ordenes"][0]["orden_id"]
@@ -140,7 +158,7 @@ def test_rechazo_generico_devuelve_todo(
                     [{"item_id": item["id"], "estado": "rechazado", "cantidad_aceptada": 0}])
     assert r_re.status_code == 200, r_re.text
     assert r_re.json()["data"]["estado"] == "rechazada"
-    assert _stock(of["id"]) == inicial  # rechazo genérico → todo de vuelta
+    assert _stock(of["id"]) == 0  # rechazo → agotado
 
     # La orden ya no es editable (frontera de estados).
     assert _decidir(client, headers_proveedor1, orden_id,
@@ -169,30 +187,38 @@ def test_rechazo_sin_stock_apaga_la_oferta(
     assert of["id"] not in ids
 
 
-def test_reedicion_desde_parcial_no_duplica_devolucion(
+def test_reedicion_desde_parcial(
     client, headers_farmacia1, headers_proveedor1, limpiar_pedidos_nuevos
 ):
-    """La contabilidad es por DELTA sobre el estado previo del ítem: re-gestionar
-    una orden aceptada_parcial no devuelve (ni consume) stock dos veces."""
+    """Re-gestionar una orden aceptada_parcial respeta la regla de agotado:
+    otra parcial mantiene el 0, y completar la orden exige stock repuesto."""
+    db = get_service_client()
     of = _oferta_con_stock(4)
-    inicial = of["stock_disponible"]
 
     r = _pedir(client, headers_farmacia1, of["id"], 4)
     orden_id = r.json()["data"]["ordenes"][0]["orden_id"]
     item = _item_unico(client, headers_proveedor1, orden_id)
 
-    # Acepta 2 de 4 → devuelve 2.
+    # Acepta 2 de 4 → agotado (0).
     _decidir(client, headers_proveedor1, orden_id,
              [{"item_id": item["id"], "estado": "aceptado", "cantidad_aceptada": 2}])
-    assert _stock(of["id"]) == inicial - 2
-    # Re-edita a 1 de 4 → devuelve 1 más (no 3).
+    assert _stock(of["id"]) == 0
+    # Re-edita a 1 de 4 → sigue parcial → sigue en 0 (no se devuelve nada).
     _decidir(client, headers_proveedor1, orden_id,
              [{"item_id": item["id"], "estado": "aceptado", "cantidad_aceptada": 1}])
-    assert _stock(of["id"]) == inicial - 1
-    # Re-edita subiendo a 3 → consume 2 del stock disponible.
-    _decidir(client, headers_proveedor1, orden_id,
-             [{"item_id": item["id"], "estado": "aceptado", "cantidad_aceptada": 3}])
-    assert _stock(of["id"]) == inicial - 3
+    assert _stock(of["id"]) == 0
+    # Completar la orden (4 de 4) exige consumir 3 más: sin stock repuesto → 400.
+    r_full = _decidir(client, headers_proveedor1, orden_id,
+                      [{"item_id": item["id"], "estado": "aceptado", "cantidad_aceptada": 4}])
+    assert r_full.status_code == 400
+    assert "stock_insuficiente" in r_full.json()["detail"]
+    # El proveedor repone stock en su catálogo → ahora sí puede completar.
+    db.table("ofertas").update({"stock_disponible": 10}).eq("id", of["id"]).execute()
+    r_ok = _decidir(client, headers_proveedor1, orden_id,
+                    [{"item_id": item["id"], "estado": "aceptado", "cantidad_aceptada": 4}])
+    assert r_ok.status_code == 200, r_ok.text
+    assert r_ok.json()["data"]["estado"] == "aceptada_total"
+    assert _stock(of["id"]) == 7  # 10 − (4 − 1 ya retenida)
 
 
 def test_concurrencia_dos_pedidos_mismo_stock(

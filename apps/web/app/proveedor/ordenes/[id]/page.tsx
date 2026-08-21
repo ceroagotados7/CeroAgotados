@@ -268,8 +268,9 @@ function ResumenConfirmacion({
       </p>
       {modo === "rechazar" ? (
         <p className="mb-2.5 text-[12.5px] text-muted">
-          No se despachará ningún ítem y la farmacia podrá pedirlos a otro proveedor. Tu stock
-          reservado se libera.
+          No se despachará ningún ítem y la farmacia podrá pedirlos a otro proveedor. Asumiremos
+          que estos productos se agotaron: tus ofertas quedarán en <b>stock 0</b> (repónlas desde
+          tu catálogo cuando vuelvas a tener).
         </p>
       ) : (
         <ul className="mb-2.5 space-y-1 text-[12.5px]">
@@ -280,9 +281,12 @@ function ResumenConfirmacion({
             </li>
           )}
           {resumen.parciales > 0 && (
-            <li className="flex items-center gap-1.5 text-amber-700">
-              <Minus size={14} className="flex-none" />
-              {resumen.parciales} parcial{resumen.parciales !== 1 && "es"} (menos cajas de las pedidas)
+            <li className="flex items-start gap-1.5 text-amber-700">
+              <Minus size={14} className="mt-0.5 flex-none" />
+              <span>
+                {resumen.parciales} parcial{resumen.parciales !== 1 && "es"}: al despachar menos de
+                lo pedido asumimos agotado — esa{resumen.parciales !== 1 ? "s ofertas quedarán" : " oferta quedará"} en <b>stock 0</b>.
+              </span>
             </li>
           )}
           {resumen.sinStock > 0 && (
@@ -411,6 +415,12 @@ function ItemEditable({
             de {item.cantidad_solicitada}{parcial && " · parcial"}
           </span>
         </div>
+      )}
+      {parcial && (
+        <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-amber-700">
+          <Info size={13} /> Al despachar menos de lo pedido, tu oferta quedará en stock 0
+          (ajústala en tu catálogo cuando repongas).
+        </p>
       )}
       {!disponible && (
         <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-danger">
