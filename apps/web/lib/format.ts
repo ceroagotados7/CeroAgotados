@@ -43,6 +43,18 @@ export function hace(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
 }
 
+/** Fecha y hora cortas para el timeline: "21 ago, 3:45 p. m.". */
+export function fechaHora(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("es-CO", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 /** Iniciales (hasta 2 letras) a partir de un nombre, para avatares. */
 export function iniciales(nombre: string): string {
   const parts = nombre.trim().split(/\s+/).filter(Boolean);

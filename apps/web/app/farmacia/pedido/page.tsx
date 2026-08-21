@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, ShoppingCart, Trash2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -181,9 +181,17 @@ export default function PedidoPage() {
             </p>
             <p className="font-display text-[18px] font-extrabold">{cop(cartTotal(cart))}</p>
           </div>
-          <Button size="lg" block disabled={enviando} onClick={confirmar}>
-            {enviando ? "Confirmando…" : "Confirmar pedido"}
-          </Button>
+          {/* "Continuar pedido": volver a buscar SIN perder el carrito. */}
+          <div className="flex gap-2.5">
+            <Link href="/farmacia" className="flex-1">
+              <Button variant="outline" size="lg" block disabled={enviando}>
+                <Plus size={17} /> Continuar pedido
+              </Button>
+            </Link>
+            <Button size="lg" block className="flex-1" disabled={enviando} onClick={confirmar}>
+              {enviando ? "Confirmando…" : "Confirmar pedido"}
+            </Button>
+          </div>
         </div>
       )}
     </>

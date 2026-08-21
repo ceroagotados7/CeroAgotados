@@ -3,7 +3,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 
 from app.schemas.catalogo import ProductoMaestro
-from app.schemas.ordenes import OrdenItem
+from app.schemas.ordenes import OrdenEvento, OrdenItem
 
 # ---------------------------------------------------------------------------
 # ANONIMATO DEL PROVEEDOR (regla de negocio del fundador, 2026-08-02):
@@ -75,3 +75,4 @@ class PedidoFarmacia(BaseModel):
     proveedor_alias: str
     created_at: str
     items: list[OrdenItem] = []
+    eventos: list[OrdenEvento] = []

@@ -23,6 +23,13 @@ class OrgRef(BaseModel):
     ciudad: str | None = None
 
 
+class OrdenEvento(BaseModel):
+    """Un hito del timeline de la orden (sin actor: no filtra identidades)."""
+
+    tipo: str
+    created_at: str
+
+
 class Orden(BaseModel):
     id: str
     codigo: str
@@ -33,12 +40,15 @@ class Orden(BaseModel):
     created_at: str
     farmacia: OrgRef | None = None
     items: list[OrdenItem] = []
+    eventos: list[OrdenEvento] = []
 
 
 class ItemDecision(BaseModel):
     item_id: str
     estado: Literal["aceptado", "rechazado", "sustituido"]
     cantidad_aceptada: Annotated[int, Field(ge=0)] = 0
+    # 'sin_stock' en un rechazo = agotado real en bodega → la oferta queda en 0.
+    motivo: Literal["sin_stock"] | None = None
     producto_sustituto_id: str | None = None
     oferta_sustituto_id: str | None = None
 

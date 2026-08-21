@@ -9,6 +9,9 @@ dependencies = [
     "pydantic-settings>=2.5.0",
     "supabase>=2.9.0",
     "python-jose[cryptography]>=3.3.0",
+    # Zonas horarias IANA para ZoneInfo("America/Bogota") — el alias rotativo
+    # del proveedor rota a medianoche de Bogotá; imprescindible en Windows.
+    "tzdata>=2024.1",
 ]
 
 [project.optional-dependencies]

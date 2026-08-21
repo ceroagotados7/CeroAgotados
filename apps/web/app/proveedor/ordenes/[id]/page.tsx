@@ -1,12 +1,13 @@
 "use client";
 
-import { Check, CheckCheck, Info, MessageCircle, Pill, Truck, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCheck, Info, MessageCircle, Minus, Pill, Plus, Printer, Truck, X } from "lucide-react";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 
+import { OrdenTimeline } from "@/components/orden-timeline";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, IconButton, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales } from "@/lib/format";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, fechaHora, hace, iniciales } from "@/lib/format";
 import type { ItemDecision, Oferta, Orden, OrdenItem } from "@/lib/types";
 
 export default function OrdenDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,6 +18,8 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
   // Cantidad a aceptar por ítem (0 = sin stock). Permite aceptación PARCIAL
   // por cantidad, no solo todo-o-nada por ítem.
   const [acepta, setAcepta] = useState<Record<string, number>>({});
+  // Paso de confirmación: resumen de consecuencias ANTES de aplicar (p6).
+  const [confirmando, setConfirmando] = useState<null | "aceptar" | "rechazar">(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,15 +38,10 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
         for (const of of ofertas) stock[of.producto_maestro_id] = of.stock_disponible;
         setStockPorProducto(stock);
         setOrden(o);
-        // Por defecto se acepta lo que el stock alcance (hasta lo solicitado).
-        setAcepta(
-          Object.fromEntries(
-            o.items.map((it) => [
-              it.id,
-              Math.min(stock[it.producto_maestro_id] ?? 0, it.cantidad_solicitada),
-            ]),
-          ),
-        );
+        // Por defecto se acepta TODO lo solicitado: el pedido ya reservó ese
+        // stock al crearse (el stock en vivo que se muestra es lo que queda
+        // FUERA de esta orden, solo informativo).
+        setAcepta(Object.fromEntries(o.items.map((it) => [it.id, it.cantidad_solicitada])));
       })
       .catch(() => active && setError("No se pudo cargar la orden."));
     return () => {
@@ -56,25 +54,32 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
   const editable = orden?.estado === "pendiente";
 
   const resumen = useMemo(() => {
-    if (!orden) return { solicitado: 0, aDespachar: 0, disponibles: 0 };
+    if (!orden) return { solicitado: 0, aDespachar: 0, disponibles: 0, completos: 0, parciales: 0, sinStock: 0 };
     let solicitado = 0;
     let aDespachar = 0;
     let disponibles = 0;
+    let completos = 0;
+    let parciales = 0;
+    let sinStock = 0;
     for (const it of orden.items) {
       solicitado += it.cantidad_solicitada * it.precio_unitario_snapshot;
       const cant = acepta[it.id] ?? 0;
       if (cant > 0) {
         aDespachar += cant * it.precio_unitario_snapshot;
         disponibles += 1;
+        if (cant >= it.cantidad_solicitada) completos += 1;
+        else parciales += 1;
+      } else {
+        sinStock += 1;
       }
     }
-    return { solicitado, aDespachar, disponibles };
+    return { solicitado, aDespachar, disponibles, completos, parciales, sinStock };
   }, [orden, acepta]);
 
-  if (error) return <p className="px-5 pt-4 text-danger">{error}</p>;
+  if (error && !orden) return <p className="px-5 pt-4 text-danger">{error}</p>;
   if (!orden) return <Spinner />;
 
-  async function confirmar(rechazarTodo = false) {
+  async function confirmar(rechazarTodo: boolean) {
     setBusy(true);
     setError(null);
     try {
@@ -84,15 +89,26 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
           item_id: it.id,
           estado: cantidad > 0 ? "aceptado" : "rechazado",
           cantidad_aceptada: cantidad,
+          // El chip "Sin stock" declara agotado REAL → la plataforma pone la
+          // oferta en 0 (regla del fundador). Rechazar la orden completa es un
+          // rechazo genérico: el stock reservado se devuelve.
+          motivo: !rechazarTodo && cantidad === 0 ? "sin_stock" : null,
         };
       });
       await api.post(`/ordenes/${id}/aceptar`, { decisiones });
+      setConfirmando(null);
       await load();
     } catch (e) {
       setError(e instanceof ApiCallError ? e.message : "No se pudo confirmar la orden.");
     } finally {
       setBusy(false);
     }
+  }
+
+  /** Botón principal: si hay parciales o sin stock, primero muestra el resumen. */
+  function intentarConfirmar() {
+    if (resumen.parciales > 0 || resumen.sinStock > 0) setConfirmando("aceptar");
+    else void confirmar(false);
   }
 
   async function despachar() {
@@ -133,8 +149,14 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
 
         {editable ? (
           <>
+            {/* Imprimir ANTES de decidir: llevar el papel a bodega, verificar
+                y volver con la información validada (flujo del fundador). */}
+            <Button variant="outline" size="md" block className="mb-3" onClick={() => window.print()}>
+              <Printer size={16} /> Imprimir pedido para revisar en bodega
+            </Button>
+
             <div className="mb-2 flex items-center gap-1.5 px-1 text-[12px] text-muted">
-              <Info size={14} /> Confirma cuántas cajas puedes despachar de cada ítem.
+              <Info size={14} /> Elige por ítem: todo, una parte, o márcalo sin stock.
             </div>
             <div className="space-y-2.5">
               {orden.items.map((it) => (
@@ -143,12 +165,15 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
                   item={it}
                   stock={stockPorProducto[it.producto_maestro_id] ?? 0}
                   cantidad={acepta[it.id] ?? 0}
-                  onChange={(v) => setAcepta((d) => ({ ...d, [it.id]: v }))}
+                  onChange={(v) => {
+                    setConfirmando(null);
+                    setAcepta((d) => ({ ...d, [it.id]: v }));
+                  }}
                 />
               ))}
             </div>
 
-            {/* Resumen */}
+            {/* Resumen vivo */}
             <Card className="mt-3 p-4">
               <div className="mb-1.5 flex items-center justify-between text-[13px]">
                 <span className="text-muted">Solicitado ({orden.items.length} ítems)</span>
@@ -171,6 +196,11 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
           <ResumenLectura orden={orden} />
         )}
 
+        {/* Seguimiento: cada estado con su fecha y hora. */}
+        <div className="mt-3">
+          <OrdenTimeline eventos={orden.eventos} />
+        </div>
+
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
       </div>
 
@@ -180,14 +210,24 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
         style={{ boxShadow: "0 -6px 20px rgba(15,23,42,.05)" }}
       >
         {editable ? (
-          <>
-            <Button size="lg" block disabled={busy || resumen.disponibles === 0} onClick={() => confirmar(false)}>
-              <CheckCheck size={18} /> {busy ? "Confirmando…" : `Confirmar ${resumen.disponibles} disponibles · ${cop(resumen.aDespachar)}`}
-            </Button>
-            <Button variant="outline" size="md" block className="text-danger" disabled={busy} onClick={() => confirmar(true)}>
-              Rechazar orden completa
-            </Button>
-          </>
+          confirmando ? (
+            <ResumenConfirmacion
+              modo={confirmando}
+              resumen={resumen}
+              busy={busy}
+              onConfirmar={() => void confirmar(confirmando === "rechazar")}
+              onVolver={() => setConfirmando(null)}
+            />
+          ) : (
+            <>
+              <Button size="lg" block disabled={busy || resumen.disponibles === 0} onClick={intentarConfirmar}>
+                <CheckCheck size={18} /> {busy ? "Confirmando…" : `Confirmar ${resumen.disponibles} disponibles · ${cop(resumen.aDespachar)}`}
+              </Button>
+              <Button variant="outline" size="md" block className="text-danger" disabled={busy} onClick={() => setConfirmando("rechazar")}>
+                Rechazar orden completa
+              </Button>
+            </>
+          )
         ) : orden.estado === "aceptada_total" || orden.estado === "aceptada_parcial" ? (
           <Button variant="teal" size="lg" block disabled={busy} onClick={despachar}>
             <Truck size={18} /> {busy ? "Despachando…" : "Marcar como despachada"}
@@ -199,7 +239,77 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
           </div>
         )}
       </div>
+
+      {/* Versión imprimible (solo visible al imprimir). */}
+      <OrdenImprimible orden={orden} />
     </>
+  );
+}
+
+/** Resumen de consecuencias antes de aplicar la decisión (dos pasos, p6). */
+function ResumenConfirmacion({
+  modo,
+  resumen,
+  busy,
+  onConfirmar,
+  onVolver,
+}: {
+  modo: "aceptar" | "rechazar";
+  resumen: { aDespachar: number; completos: number; parciales: number; sinStock: number };
+  busy: boolean;
+  onConfirmar: () => void;
+  onVolver: () => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[13.5px] font-semibold">
+        {modo === "rechazar" ? "¿Rechazar la orden completa?" : "Revisa tu decisión"}
+      </p>
+      {modo === "rechazar" ? (
+        <p className="mb-2.5 text-[12.5px] text-muted">
+          No se despachará ningún ítem y la farmacia podrá pedirlos a otro proveedor. Tu stock
+          reservado se libera.
+        </p>
+      ) : (
+        <ul className="mb-2.5 space-y-1 text-[12.5px]">
+          {resumen.completos > 0 && (
+            <li className="flex items-center gap-1.5 text-soft">
+              <Check size={14} className="flex-none text-primary" />
+              {resumen.completos} ítem{resumen.completos !== 1 && "s"} completo{resumen.completos !== 1 && "s"}
+            </li>
+          )}
+          {resumen.parciales > 0 && (
+            <li className="flex items-center gap-1.5 text-amber-700">
+              <Minus size={14} className="flex-none" />
+              {resumen.parciales} parcial{resumen.parciales !== 1 && "es"} (menos cajas de las pedidas)
+            </li>
+          )}
+          {resumen.sinStock > 0 && (
+            <li className="flex items-start gap-1.5 text-danger">
+              <AlertTriangle size={14} className="mt-0.5 flex-none" />
+              <span>
+                {resumen.sinStock} sin stock: esa{resumen.sinStock !== 1 ? "s ofertas quedarán" : " oferta quedará"} en <b>stock 0</b> y
+                dejará{resumen.sinStock !== 1 && "n"} de mostrarse a las farmacias.
+              </span>
+            </li>
+          )}
+        </ul>
+      )}
+      <div className="flex gap-2.5">
+        <Button variant="outline" size="md" block className="flex-1" disabled={busy} onClick={onVolver}>
+          Volver a revisar
+        </Button>
+        <Button
+          size="md"
+          block
+          className={`flex-1 ${modo === "rechazar" ? "!bg-danger" : ""}`}
+          disabled={busy}
+          onClick={onConfirmar}
+        >
+          {busy ? "Aplicando…" : modo === "rechazar" ? "Rechazar orden" : `Confirmar · ${cop(resumen.aDespachar)}`}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -231,7 +341,7 @@ function ItemEditable({
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold leading-tight">{item.producto?.nombre ?? "Producto"}</p>
           <p className={`mt-0.5 text-[12px] ${disponible ? "text-muted" : "text-danger/90"}`}>
-            Pide {item.cantidad_solicitada} cajas × {cop(item.precio_unitario_snapshot)} · tu stock:{" "}
+            Pide {item.cantidad_solicitada} cajas × {cop(item.precio_unitario_snapshot)} · stock restante:{" "}
             <b className={disponible ? "text-primary-700" : ""}>{stock}</b>
           </p>
         </div>
@@ -242,10 +352,17 @@ function ItemEditable({
 
       <div className={`mt-3 flex gap-2 border-t pt-3 ${disponible ? "border-line" : "border-danger-100"}`}>
         <button
-          onClick={() => onChange(Math.min(stock, maximo) || maximo)}
-          className={`chip flex-1 justify-center ${disponible ? "chip-active" : ""}`}
+          onClick={() => onChange(maximo)}
+          className={`chip flex-1 justify-center ${disponible && !parcial ? "chip-active" : ""}`}
         >
-          <Check size={14} /> Disponible
+          <Check size={14} /> Todo ({maximo})
+        </button>
+        <button
+          onClick={() => onChange(Math.max(1, Math.min(cantidad || maximo, maximo - 1)))}
+          className={`chip flex-1 justify-center ${parcial ? "chip-active" : ""}`}
+          disabled={maximo <= 1}
+        >
+          <Minus size={14} /> Parcial
         </button>
         <button
           onClick={() => onChange(0)}
@@ -255,29 +372,48 @@ function ItemEditable({
         </button>
       </div>
 
-      {/* Aceptación PARCIAL: el proveedor ajusta cuántas cajas despacha. */}
+      {/* Aceptación PARCIAL: stepper claro de cuántas cajas despacha. */}
       {disponible && (
         <div className="mt-2.5 flex items-center gap-2">
-          <label className="flex-none text-[12px] text-muted" htmlFor={`cant-${item.id}`}>
-            Cajas a despachar
-          </label>
-          <input
-            id={`cant-${item.id}`}
-            type="number"
-            min={1}
-            max={maximo}
-            value={cantidad}
-            onChange={(e) => onChange(Math.max(1, Math.min(Number(e.target.value) || 1, maximo)))}
-            className="input w-[84px] flex-none py-2 text-center font-semibold"
-          />
-          <span className={`text-[12px] ${parcial ? "font-semibold text-amber-600" : "text-muted"}`}>
-            de {item.cantidad_solicitada} solicitadas{parcial && " · parcial"}
+          <span className="flex-none text-[12px] text-muted">Cajas a despachar</span>
+          <div className="flex flex-none items-center gap-1">
+            <button
+              type="button"
+              className="chip !px-2.5"
+              aria-label="Una caja menos"
+              disabled={cantidad <= 1}
+              onClick={() => onChange(Math.max(1, cantidad - 1))}
+            >
+              <Minus size={14} />
+            </button>
+            <input
+              id={`cant-${item.id}`}
+              type="number"
+              min={1}
+              max={maximo}
+              value={cantidad}
+              onChange={(e) => onChange(Math.max(1, Math.min(Number(e.target.value) || 1, maximo)))}
+              className="input w-[64px] flex-none py-2 text-center font-semibold"
+              aria-label={`Cajas a despachar de ${item.producto?.nombre ?? "producto"}`}
+            />
+            <button
+              type="button"
+              className="chip !px-2.5"
+              aria-label="Una caja más"
+              disabled={cantidad >= maximo}
+              onClick={() => onChange(Math.min(maximo, cantidad + 1))}
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+          <span className={`min-w-0 text-[12px] ${parcial ? "font-semibold text-amber-600" : "text-muted"}`}>
+            de {item.cantidad_solicitada}{parcial && " · parcial"}
           </span>
         </div>
       )}
       {!disponible && (
         <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-danger">
-          <Info size={13} /> La farmacia podrá pedir este ítem a otro proveedor.
+          <Info size={13} /> Tu oferta quedará en stock 0 y la farmacia podrá pedirlo a otro proveedor.
         </p>
       )}
     </Card>
@@ -314,6 +450,73 @@ function ResumenLectura({ orden }: { orden: Orden }) {
           <span className="font-display text-[20px] font-extrabold text-primary-800">{cop(orden.total)}</span>
         </div>
       </Card>
+    </div>
+  );
+}
+
+/** Hoja imprimible del pedido: para llevar a bodega y verificar antes de
+ *  aceptar/rechazar. Solo visible en la impresión (@media print). */
+function OrdenImprimible({ orden }: { orden: Orden }) {
+  const total = orden.items.reduce(
+    (acc, i) => acc + i.cantidad_solicitada * i.precio_unitario_snapshot,
+    0,
+  );
+  return (
+    <div className="orden-print" aria-hidden>
+      <style>{`
+        .orden-print { display: none; }
+        @media print {
+          body * { visibility: hidden; }
+          .orden-print, .orden-print * { visibility: visible; }
+          .orden-print {
+            display: block; position: absolute; left: 0; top: 0; width: 100%;
+            padding: 28px; color: #000; background: #fff;
+            font-family: Arial, Helvetica, sans-serif; font-size: 13px;
+          }
+          .orden-print table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+          .orden-print th, .orden-print td { border: 1px solid #999; padding: 7px 9px; text-align: left; }
+          .orden-print th { background: #eee; font-size: 11px; text-transform: uppercase; }
+          .orden-print .caja { display: inline-block; width: 13px; height: 13px; border: 1.5px solid #000; }
+        }
+      `}</style>
+      <h1 style={{ fontSize: 19, margin: 0 }}>Pedido #{orden.codigo} — Cero Agotados</h1>
+      <p style={{ margin: "6px 0 0" }}>
+        Farmacia: <b>{orden.farmacia?.razon_social ?? "—"}</b>
+        {orden.farmacia?.ciudad ? ` · ${orden.farmacia.ciudad}` : ""}
+        {orden.farmacia?.nit ? ` · NIT ${orden.farmacia.nit}` : ""}
+      </p>
+      <p style={{ margin: "2px 0 0" }}>Recibido: {fechaHora(orden.created_at)}</p>
+      <table>
+        <thead>
+          <tr>
+            <th style={{ width: 30 }}>OK</th>
+            <th>Producto</th>
+            <th>Presentación</th>
+            <th style={{ width: 90 }}>Cajas pedidas</th>
+            <th style={{ width: 110 }}>Cajas en bodega</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orden.items.map((i) => (
+            <tr key={i.id}>
+              <td><span className="caja" /></td>
+              <td>{i.producto?.nombre ?? "Producto"}</td>
+              <td>
+                {[i.producto?.forma_farmaceutica, i.producto?.presentacion].filter(Boolean).join(" · ") || "—"}
+              </td>
+              <td>{i.cantidad_solicitada}</td>
+              <td />
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p style={{ marginTop: 12 }}>
+        Total solicitado (referencia): <b>{cop(total)}</b>
+      </p>
+      <p style={{ marginTop: 6, fontSize: 11.5 }}>
+        Verifica las cantidades en bodega y vuelve a Cero Agotados para aceptar, aceptar
+        parcialmente o marcar sin stock cada ítem.
+      </p>
     </div>
   );
 }

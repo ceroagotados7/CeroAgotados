@@ -56,6 +56,12 @@ export type OrgRef = {
   ciudad?: string | null;
 };
 
+/** Hito del timeline de una orden (sin actor: no expone identidades). */
+export type OrdenEvento = {
+  tipo: string;
+  created_at: string;
+};
+
 export type Orden = {
   id: string;
   codigo: string;
@@ -66,6 +72,7 @@ export type Orden = {
   created_at: string;
   farmacia?: OrgRef | null;
   items: OrdenItem[];
+  eventos?: OrdenEvento[];
 };
 
 export type VentaDia = {
@@ -123,6 +130,8 @@ export type ItemDecision = {
   item_id: string;
   estado: "aceptado" | "rechazado" | "sustituido";
   cantidad_aceptada: number;
+  /** 'sin_stock' en un rechazo = agotado real → la oferta queda en stock 0. */
+  motivo?: "sin_stock" | null;
   producto_sustituto_id?: string | null;
   oferta_sustituto_id?: string | null;
 };
@@ -176,6 +185,7 @@ export type PedidoFarmacia = {
   proveedor_alias: string;
   created_at: string;
   items: OrdenItem[];
+  eventos?: OrdenEvento[];
 };
 
 /* ------------------------------------------------------------------ */

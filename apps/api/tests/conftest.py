@@ -55,6 +55,32 @@ def live_db():
         pytest.skip(f"Supabase local no disponible ({exc}). Corre `supabase start`.")
 
 
+@pytest.fixture(autouse=True)
+def _stock_estable():
+    """El motor de stock (2026-08-21) hace que los pedidos de prueba muevan
+    stock real: congela el stock de todas las ofertas antes de cada test y lo
+    restaura al final, para que la suite sea idempotente contra DEV sin
+    `db reset`. Si la DB no responde, no hace nada (los tests de integración
+    se saltan solos vía `live_db`)."""
+    try:
+        db = get_service_client()
+        antes = {
+            o["id"]: o["stock_disponible"]
+            for o in (db.table("ofertas").select("id, stock_disponible").execute().data or [])
+        }
+    except Exception:  # noqa: BLE001
+        yield
+        return
+    yield
+    despues = {
+        o["id"]: o["stock_disponible"]
+        for o in (db.table("ofertas").select("id, stock_disponible").execute().data or [])
+    }
+    for oid, stock in antes.items():
+        if oid in despues and despues[oid] != stock:
+            db.table("ofertas").update({"stock_disponible": stock}).eq("id", oid).execute()
+
+
 @pytest.fixture
 def headers_proveedor1() -> dict[str, str]:
     return {"Authorization": f"Bearer {make_token(USER_PROVEEDOR1)}"}

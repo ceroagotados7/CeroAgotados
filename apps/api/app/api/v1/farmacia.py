@@ -1,5 +1,7 @@
 import hashlib
+from datetime import datetime
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException, Query, status
 from postgrest.exceptions import APIError
@@ -16,23 +18,34 @@ from app.schemas.farmacia import (
     PedidoFarmacia,
     ProductoBusqueda,
 )
-from app.schemas.ordenes import OrdenItem
+from app.schemas.ordenes import OrdenEvento, OrdenItem
 
 router = APIRouter(prefix="/farmacia", tags=["farmacia"])
 
 _PRODUCTO_COLS = "id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria"
 _ITEM_PRODUCTO = "producto:producto_maestro!orden_items_producto_maestro_id_fkey(id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria)"
-_PEDIDO_SELECT = f"id, codigo, estado, total, proveedor_id, created_at, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id)"
+_PEDIDO_SELECT = f"id, codigo, estado, total, proveedor_id, proveedor_alias, created_at, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
 
-# Sal fija del alias anónimo. No es un secreto criptográfico: solo garantiza que
-# el alias no sea derivable del id por un tercero casual y que sea ESTABLE
-# (mismo proveedor → mismo alias en comparación, pedido y seguimiento).
-_ALIAS_SALT = "cero-agotados-alias-v1"
+# Sal del alias anónimo. No es un secreto criptográfico: solo garantiza que el
+# alias no sea derivable del id por un tercero casual.
+_ALIAS_SALT = "cero-agotados-alias-v2"
+_ALIAS_TZ = ZoneInfo("America/Bogota")
 
 
 def _alias_proveedor(org_id: str) -> str:
-    """Etiqueta anónima y estable de un proveedor ("Proveedor 3F2A")."""
-    tag = hashlib.md5(f"{org_id}:{_ALIAS_SALT}".encode()).hexdigest()[:4].upper()
+    """Etiqueta anónima ROTATIVA de un proveedor ("Proveedor 3F2A").
+
+    Regla del fundador (2026-08-21): el alias NO es fijo — rota una vez al día
+    (fecha de Bogotá) para que las farmacias no puedan correlacionar alias ↔
+    proveedor real tras recibir entregas físicas. Dentro del día es estable
+    (carrito y comparaciones consistentes); cada orden congela el alias vigente
+    al crearse (columna ordenes.proveedor_alias, la escribe la RPC).
+
+    DEBE producir exactamente el mismo texto que alias_proveedor_del_dia() en
+    Postgres (test de paridad en test_stock_y_alias.py).
+    """
+    hoy = datetime.now(_ALIAS_TZ).strftime("%Y-%m-%d")
+    tag = hashlib.md5(f"{org_id}:{hoy}:{_ALIAS_SALT}".encode()).hexdigest()[:4].upper()
     return f"Proveedor {tag}"
 
 
@@ -218,7 +231,8 @@ def crear_pedido(
         OrdenCreada(
             orden_id=o["orden_id"],
             codigo=o["codigo"],
-            proveedor_alias=_alias_proveedor(o["proveedor_id"]),  # id → alias, nunca expuesto
+            # Alias congelado por la RPC (el id real nunca se expone).
+            proveedor_alias=o.get("proveedor_alias") or _alias_proveedor(o["proveedor_id"]),
             n_items=o["n_items"],
             subtotal=round(float(o["subtotal"]), 2),
         )
@@ -274,15 +288,21 @@ def _a_pedido(row: dict) -> PedidoFarmacia:
     total_solicitado = sum(
         i.cantidad_solicitada * i.precio_unitario_snapshot for i in items
     )
+    eventos = sorted(
+        (OrdenEvento(**e) for e in (row.get("eventos") or [])),
+        key=lambda e: e.created_at,
+    )
     return PedidoFarmacia(
         id=row["id"],
         codigo=row["codigo"],
         estado=row["estado"],
         total=float(row["total"]),
         total_solicitado=round(total_solicitado, 2),
-        proveedor_alias=_alias_proveedor(row["proveedor_id"]),
+        # Alias congelado al crear la orden; fallback para filas históricas.
+        proveedor_alias=row.get("proveedor_alias") or _alias_proveedor(row["proveedor_id"]),
         created_at=row["created_at"],
         items=items,
+        eventos=eventos,
     )
 
 
@@ -316,23 +336,22 @@ def cancelar_pedido(
 ) -> ApiResponse[PedidoFarmacia]:
     """Cancela un pedido mientras el proveedor no lo haya gestionado.
 
-    UPDATE condicional (id + farmacia + estado='pendiente') → atómico: si el
-    proveedor lo aceptó en paralelo, 0 filas afectadas y devolvemos 409.
+    Delega en la RPC transaccional `cancelar_pedido` (lock de la orden +
+    devolución del stock reservado, atómicos): si el proveedor lo aceptó en
+    paralelo, la RPC falla con estado_no_cancelable y devolvemos 409.
     """
-    _cargar_pedido(db, orden_id, org_id)  # 404 si no existe / no es suyo
-    res = (
-        db.table("ordenes")
-        .update({"estado": "cancelada"})
-        .eq("id", orden_id)
-        .eq("farmacia_id", org_id)
-        .eq("estado", "pendiente")
-        .execute()
-    )
-    if not res.data:
-        raise HTTPException(status.HTTP_409_CONFLICT, "estado_no_cancelable")
-    db.table("orden_eventos").insert(
-        {"orden_id": orden_id, "actor_id": user_id, "tipo": "cancelada", "payload": {}}
-    ).execute()
+    try:
+        db.rpc(
+            "cancelar_pedido",
+            {"p_orden_id": orden_id, "p_farmacia_id": org_id, "p_actor": user_id},
+        ).execute()
+    except APIError as exc:
+        msg = (exc.message or "").strip()
+        if "pedido_no_encontrado" in msg:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "pedido_no_encontrado") from exc
+        if "estado_no_cancelable" in msg:
+            raise HTTPException(status.HTTP_409_CONFLICT, "estado_no_cancelable") from exc
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, msg or "error_rpc") from exc
     return ApiResponse(data=_cargar_pedido(db, orden_id, org_id))
 
 

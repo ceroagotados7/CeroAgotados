@@ -2,14 +2,14 @@
 
 import { Boxes, Check, ShoppingCart, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, EmptyState, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
 import { addToCart, useCart } from "@/lib/cart";
 import { cop } from "@/lib/format";
-import type { CompararResult, OpcionCompara } from "@/lib/types";
+import type { CompararResult } from "@/lib/types";
 
 export default function CompararPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -18,8 +18,9 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
 
   const [data, setData] = useState<CompararResult | null>(null);
   const [error, setError] = useState(false);
-  const [sel, setSel] = useState<OpcionCompara | null>(null);
-  const [cantidad, setCantidadLocal] = useState(10);
+  // Selección MÚLTIPLE (regla del fundador): la farmacia puede pedir el mismo
+  // producto a varios proveedores a la vez. oferta_id → cantidad.
+  const [sel, setSel] = useState<Record<string, number>>({});
 
   useEffect(() => {
     let active = true;
@@ -32,6 +33,15 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
     };
   }, [id]);
 
+  const seleccion = useMemo(
+    () => (data ? data.opciones.filter((o) => sel[o.oferta_id] != null) : []),
+    [data, sel],
+  );
+  const totalSel = seleccion.reduce((acc, o) => acc + o.precio * (sel[o.oferta_id] ?? 0), 0);
+  const selValida = seleccion.every(
+    (o) => (sel[o.oferta_id] ?? 0) >= 1 && (sel[o.oferta_id] ?? 0) <= o.stock_disponible,
+  );
+
   if (error) return <p className="px-5 pt-4 text-danger">No se pudo cargar el producto.</p>;
   if (!data) return <Spinner />;
 
@@ -40,18 +50,31 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
     .join(" · ");
   const enCarrito = new Set(cart.map((i) => i.oferta_id));
 
-  function agregar() {
-    if (!sel || !data) return;
-    addToCart({
-      oferta_id: sel.oferta_id,
-      producto_id: data.producto.id,
-      nombre: data.producto.nombre,
-      presentacion,
-      proveedor_alias: sel.proveedor_alias,
-      precio: sel.precio,
-      stock: sel.stock_disponible,
-      cantidad: Math.min(cantidad, sel.stock_disponible),
+  function toggle(ofertaId: string, stock: number) {
+    setSel((s) => {
+      if (s[ofertaId] != null) {
+        const resto = { ...s };
+        delete resto[ofertaId];
+        return resto;
+      }
+      return { ...s, [ofertaId]: Math.min(10, stock) };
     });
+  }
+
+  function agregarSeleccion() {
+    if (!data || seleccion.length === 0 || !selValida) return;
+    for (const o of seleccion) {
+      addToCart({
+        oferta_id: o.oferta_id,
+        producto_id: data.producto.id,
+        nombre: data.producto.nombre,
+        presentacion,
+        proveedor_alias: o.proveedor_alias,
+        precio: o.precio,
+        stock: o.stock_disponible,
+        cantidad: Math.min(sel[o.oferta_id] ?? 1, o.stock_disponible),
+      });
+    }
     router.push("/farmacia/pedido");
   }
 
@@ -59,7 +82,7 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
     <>
       <BackBar title={data.producto.nombre} subtitle="Comparar opciones" backHref="/farmacia" />
 
-      <div className="px-5 pb-32">
+      <div className="px-5 pb-44">
         {presentacion && <p className="mb-3 px-1 text-[12.5px] text-muted">{presentacion}</p>}
 
         {/* Stats (f2): opciones · más bajo · promedio. Sin identidad de proveedor. */}
@@ -72,8 +95,8 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
         )}
 
         <p className="mb-2 px-1 text-[12px] text-muted">
-          Ordenado por precio. Los proveedores participan de forma <b>anónima</b>: compara solo
-          por precio y disponibilidad.
+          Ordenado por precio. Los proveedores participan de forma <b>anónima</b>: puedes
+          seleccionar <b>varias opciones</b> y pedir el mismo producto a más de un proveedor.
         </p>
 
         {data.opciones.length === 0 ? (
@@ -85,7 +108,8 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
         ) : (
           <div className="space-y-2.5">
             {data.opciones.map((o) => {
-              const activa = sel?.oferta_id === o.oferta_id;
+              const activa = sel[o.oferta_id] != null;
+              const cantidad = sel[o.oferta_id] ?? 0;
               const yaEnPedido = enCarrito.has(o.oferta_id);
               return (
                 <Card
@@ -97,11 +121,17 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
                   <button
                     type="button"
                     className="flex w-full items-center gap-3 text-left"
-                    onClick={() => {
-                      setSel(o);
-                      setCantidadLocal(Math.min(10, o.stock_disponible));
-                    }}
+                    aria-pressed={activa}
+                    onClick={() => toggle(o.oferta_id, o.stock_disponible)}
                   >
+                    <span
+                      className={`flex h-5 w-5 flex-none items-center justify-center rounded-md border ${
+                        activa ? "border-primary bg-primary text-white" : "border-line bg-surface"
+                      }`}
+                      aria-hidden
+                    >
+                      {activa && <Check size={13} />}
+                    </span>
                     <Avatar className={`h-10 w-10 text-[13px] ${o.es_mejor_precio ? "bg-primary" : "bg-slate-400"}`}>
                       {o.proveedor_alias.replace("Proveedor ", "").slice(0, 2)}
                     </Avatar>
@@ -109,6 +139,7 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
                       <div className="flex items-center gap-2">
                         <p className="text-[14px] font-semibold leading-tight">{o.proveedor_alias}</p>
                         {o.es_mejor_precio && <Badge tone="best">Mejor precio</Badge>}
+                        {yaEnPedido && <Badge tone="teal">En tu pedido</Badge>}
                       </div>
                       <p className="mt-0.5 flex items-center gap-1 text-[12px] text-muted">
                         <Boxes size={12} /> stock {o.stock_disponible} cajas
@@ -127,28 +158,38 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
                   {/* Cantidad (f3) inline al seleccionar. */}
                   {activa && (
                     <div className="mt-3 border-t border-line pt-3">
-                      <label className="label">Cantidad (cajas)</label>
+                      <label className="label" htmlFor={`cant-${o.oferta_id}`}>
+                        Cantidad (cajas)
+                      </label>
                       <div className="mb-2 flex items-center gap-2">
                         <input
+                          id={`cant-${o.oferta_id}`}
                           type="number"
                           min={1}
                           max={o.stock_disponible}
                           value={cantidad}
-                          onChange={(e) => setCantidadLocal(Number(e.target.value))}
+                          onChange={(e) =>
+                            setSel((s) => ({ ...s, [o.oferta_id]: Number(e.target.value) }))
+                          }
                           className="input flex-1 font-semibold"
                         />
                         {[10, 50, 100].map((n) => (
                           <button
                             key={n}
                             type="button"
-                            onClick={() => setCantidadLocal(Math.min(cantidad + n, o.stock_disponible))}
+                            onClick={() =>
+                              setSel((s) => ({
+                                ...s,
+                                [o.oferta_id]: Math.min(cantidad + n, o.stock_disponible),
+                              }))
+                            }
                             className="chip flex-none"
                           >
                             +{n}
                           </button>
                         ))}
                       </div>
-                      <div className="mb-3 flex items-center justify-between text-[13px]">
+                      <div className="flex items-center justify-between text-[13px]">
                         <span className="text-muted">
                           {cantidad} caja{cantidad !== 1 && "s"} × {cop(o.precio)}
                         </span>
@@ -156,17 +197,8 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
                           {cop(o.precio * cantidad)}
                         </span>
                       </div>
-                      <Button
-                        size="md"
-                        block
-                        disabled={cantidad < 1 || cantidad > o.stock_disponible}
-                        onClick={agregar}
-                      >
-                        {yaEnPedido ? <Check size={16} /> : <ShoppingCart size={16} />}
-                        {yaEnPedido ? "Actualizar en el pedido" : "Agregar al pedido"} · {cop(o.precio * cantidad)}
-                      </Button>
                       {cantidad > o.stock_disponible && (
-                        <p className="mt-1.5 text-center text-[12px] text-danger">
+                        <p className="mt-1.5 text-[12px] text-danger">
                           Máximo {o.stock_disponible} cajas disponibles.
                         </p>
                       )}
@@ -178,6 +210,25 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
           </div>
         )}
       </div>
+
+      {/* Botón ÚNICO abajo (no por proveedor): agrega toda la selección. */}
+      {seleccion.length > 0 && (
+        <div
+          className="fixed bottom-20 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-line bg-surface px-5 py-3.5"
+          style={{ boxShadow: "0 -6px 20px rgba(15,23,42,.05)" }}
+        >
+          <div className="mb-2 flex items-center justify-between text-[13px]">
+            <span className="text-muted">
+              {seleccion.length} proveedor{seleccion.length !== 1 && "es"} seleccionado
+              {seleccion.length !== 1 && "s"}
+            </span>
+            <span className="font-display text-[15px] font-bold">{cop(totalSel)}</span>
+          </div>
+          <Button size="lg" block disabled={!selValida} onClick={agregarSeleccion}>
+            <ShoppingCart size={17} /> Agregar al pedido · {cop(totalSel)}
+          </Button>
+        </div>
+      )}
     </>
   );
 }

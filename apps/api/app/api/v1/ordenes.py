@@ -11,7 +11,7 @@ router = APIRouter(prefix="/ordenes", tags=["ordenes"])
 
 _ITEM_PRODUCTO = "producto:producto_maestro!orden_items_producto_maestro_id_fkey(id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria)"
 _FARMACIA = "farmacia:organizaciones!ordenes_farmacia_id_fkey(razon_social, nit, ciudad)"
-_SELECT = f"*, {_FARMACIA}, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id)"
+_SELECT = f"*, {_FARMACIA}, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
 
 
 @router.get("/")
@@ -107,7 +107,9 @@ def _cargar_orden(db, orden_id: str, org_id: str) -> Orden:
     )
     if not res.data:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "orden_no_encontrada")
-    return Orden(**res.data[0])
+    row = res.data[0]
+    row["eventos"] = sorted(row.get("eventos") or [], key=lambda e: e["created_at"])
+    return Orden(**row)
 
 
 def _map_rpc_error(exc: APIError) -> HTTPException:

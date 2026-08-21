@@ -3,10 +3,10 @@
 // Piezas de estructura (shell) del área autenticada: app bar por pantalla,
 // barra con "atrás" para sub-pantallas y bottom-nav de 4 tabs.
 // Mobile-first y responsive: el contenido vive en una columna fluida centrada.
-import { ArrowLeft, BarChart3, ClipboardList, Factory, LayoutDashboard, PiggyBank, Pill, Search, ShoppingCart, User } from "lucide-react";
+import { ArrowLeft, BarChart3, BellRing, ClipboardList, Factory, LayoutDashboard, PiggyBank, Pill, Search, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { api } from "@/lib/api";
 
@@ -115,14 +115,66 @@ function usePendientes(rol: "proveedor" | "farmacia" | "admin"): number {
   return n;
 }
 
+/** Alerta visible para el proveedor cuando ENTRA un pedido nuevo (el conteo
+ *  de pendientes SUBE entre dos ticks del polling). Persistente hasta que se
+ *  cierra o se abre la bandeja. */
+function AlertaPedidoNuevo({ pendientes }: { pendientes: number }) {
+  const prev = useRef<number | null>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (prev.current != null && pendientes > prev.current) setVisible(true);
+    prev.current = pendientes;
+  }, [pendientes]);
+  if (!visible || pendientes === 0) return null;
+  return (
+    <div className="fixed left-1/2 top-3 z-30 w-[calc(100%-2.5rem)] max-w-[390px] -translate-x-1/2">
+      <div
+        className="flex items-center gap-2.5 rounded-xl border border-primary-100 bg-primary-50 px-3.5 py-3"
+        style={{ boxShadow: "0 8px 24px rgba(15,23,42,.14)" }}
+        role="status"
+      >
+        <BellRing size={18} className="flex-none text-primary" />
+        <p className="min-w-0 flex-1 text-[13px] font-semibold leading-tight text-primary-800">
+          ¡Te llegó un pedido nuevo!
+        </p>
+        <Link
+          href="/proveedor/ordenes"
+          onClick={() => setVisible(false)}
+          className="flex-none text-[13px] font-bold text-primary-700 underline"
+        >
+          Ver órdenes
+        </Link>
+        <button
+          type="button"
+          onClick={() => setVisible(false)}
+          aria-label="Cerrar alerta"
+          className="flex-none text-primary-700"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Bottom-nav flotante de 4 tabs, constreñido a la columna móvil. */
 export function BottomNav({ rol = "proveedor" }: { rol?: "proveedor" | "farmacia" | "admin" }) {
   const pathname = usePathname();
   const pendientes = usePendientes(rol);
   const tabs = rol === "farmacia" ? TABS_FARMACIA : rol === "admin" ? TABS_ADMIN : TABS;
   const home = rol === "farmacia" ? "/farmacia" : rol === "admin" ? "/admin" : "/proveedor";
+
+  // El título de la pestaña también avisa: "(2) Cero Agotados".
+  useEffect(() => {
+    if (rol !== "proveedor" || typeof document === "undefined") return;
+    const base = document.title.replace(/^\(\d+\+?\)\s*/, "");
+    document.title = pendientes > 0 ? `(${pendientes}) ${base}` : base;
+  }, [pendientes, rol]);
+
   return (
-    <nav className="bottomnav fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2">
+    <>
+      {rol === "proveedor" && <AlertaPedidoNuevo pendientes={pendientes} />}
+      <nav className="bottomnav fixed bottom-0 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2">
       {tabs.map(({ href, label, icon: Icon }) => {
         const active = href === home ? pathname === href : pathname.startsWith(href);
         const conBadge =
@@ -145,6 +197,7 @@ export function BottomNav({ rol = "proveedor" }: { rol?: "proveedor" | "farmacia
           </Link>
         );
       })}
-    </nav>
+      </nav>
+    </>
   );
 }

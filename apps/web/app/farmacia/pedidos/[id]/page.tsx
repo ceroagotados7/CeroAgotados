@@ -3,6 +3,7 @@
 import { CheckCheck, PackageCheck, XCircle } from "lucide-react";
 import { use, useCallback, useEffect, useState } from "react";
 
+import { OrdenTimeline } from "@/components/orden-timeline";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
@@ -156,6 +157,9 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
             </span>
           </div>
         </Card>
+
+        {/* Seguimiento: cada estado con su fecha y hora. */}
+        <OrdenTimeline eventos={pedido.eventos} />
 
         {error && <p className="mb-3 text-center text-[12.5px] text-danger">{error}</p>}
 
