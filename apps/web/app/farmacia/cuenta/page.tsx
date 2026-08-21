@@ -1,6 +1,7 @@
 "use client";
 
-import { BadgeCheck, Building2, LogOut, Mail, MapPin, User } from "lucide-react";
+import { BadgeCheck, Building2, ChevronRight, FileText, LogOut, Mail, MapPin, User } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -60,6 +61,16 @@ export default function CuentaFarmaciaPage() {
             <Card className="mb-4 divide-y divide-line">
               <InfoRow icon={<Building2 size={17} />} label="NIT" value={me.organizacion?.nit ?? "—"} />
               <InfoRow icon={<MapPin size={17} />} label="Ciudad" value={me.organizacion?.ciudad ?? "—"} />
+              <Link href="/farmacia/cuenta/documentos" className="flex items-center gap-3 p-3.5">
+                <span className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-canvas text-muted">
+                  <FileText size={17} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-semibold leading-tight">Documentación legal</p>
+                  <p className="mt-0.5 text-[11.5px] text-muted">Cámara de comercio, NIT/RUT y cédula</p>
+                </div>
+                <ChevronRight size={16} className="flex-none text-muted" />
+              </Link>
             </Card>
 
             <p className="mb-2 px-1 text-[12px] font-semibold text-muted">USUARIO</p>

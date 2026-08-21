@@ -82,6 +82,17 @@ def _stock_estable():
 
 
 @pytest.fixture
+def limpiar_pedidos_nuevos():
+    """Borra las órdenes creadas por las pruebas (deja las semilla ORD-0001/2)."""
+    yield
+    db = get_service_client()
+    filas = db.table("ordenes").select("id, codigo").execute().data or []
+    for f in filas:
+        if f["codigo"] not in ("ORD-0001", "ORD-0002"):
+            db.table("ordenes").delete().eq("id", f["id"]).execute()
+
+
+@pytest.fixture
 def headers_proveedor1() -> dict[str, str]:
     return {"Authorization": f"Bearer {make_token(USER_PROVEEDOR1)}"}
 

@@ -194,6 +194,18 @@ def crear_pedido(
     Delega en la RPC transaccional `crear_pedido` (atómica, con lock de las
     ofertas y código por secuencia). La respuesta anonimiza al proveedor.
     """
+    # Regla dura del fundador (2026-08-21): una farmacia sin aprobar puede
+    # navegar y comparar, pero NO comprar (simétrico al gate del proveedor).
+    estado = (
+        db.table("organizaciones")
+        .select("estado_verificacion")
+        .eq("id", org_id)
+        .single()
+        .execute()
+    ).data["estado_verificacion"]
+    if estado != "aprobado":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "farmacia_no_aprobada")
+
     ids = [i.oferta_id for i in payload.items]
     if len(set(ids)) != len(ids):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "oferta_repetida_en_pedido")

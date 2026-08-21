@@ -4,65 +4,19 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Bell,
-  Clock,
   Inbox,
   Pill,
   TrendingUp,
-  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { BannerVerificacion } from "@/components/banner-verificacion";
 import { AppBar } from "@/components/shell";
 import { Avatar, Badge, Card, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, iniciales, mesActual, mesAnterior } from "@/lib/format";
-import { useMe } from "@/lib/me";
 import type { ProveedorDashboard } from "@/lib/types";
-
-/** Banner de estado de verificación (gate "on live" decidido por el admin). */
-function BannerVerificacion() {
-  const me = useMe();
-  const estado = me?.organizacion?.estado_verificacion;
-  if (!estado || estado === "aprobado") return null;
-
-  const config = {
-    en_revision: {
-      icono: <Clock size={18} />,
-      css: "border-amber-200 bg-amber-50 text-amber-800",
-      titulo: "Tu cuenta está en revisión",
-      detalle:
-        "Nuestro equipo está validando tu empresa. Puedes ir armando tu catálogo: será visible para las farmacias apenas te aprobemos.",
-    },
-    rechazado: {
-      icono: <XCircle size={18} />,
-      css: "border-danger-100 bg-danger-50 text-danger",
-      titulo: "Tu cuenta fue rechazada",
-      detalle: me?.organizacion?.motivo_decision
-        ? `Motivo: ${me.organizacion.motivo_decision}`
-        : "Contacta al equipo de Cero Agotados para más información.",
-    },
-    suspendido: {
-      icono: <XCircle size={18} />,
-      css: "border-danger-100 bg-danger-50 text-danger",
-      titulo: "Tu cuenta está suspendida",
-      detalle: me?.organizacion?.motivo_decision
-        ? `Motivo: ${me.organizacion.motivo_decision}. Tus ofertas no son visibles para las farmacias.`
-        : "Tus ofertas no son visibles para las farmacias.",
-    },
-  }[estado];
-  if (!config) return null;
-
-  return (
-    <div className={`mb-3 flex items-start gap-2.5 rounded-card border p-3.5 ${config.css}`}>
-      <span className="mt-0.5 flex-none">{config.icono}</span>
-      <div>
-        <p className="text-[13.5px] font-semibold leading-tight">{config.titulo}</p>
-        <p className="mt-0.5 text-[12.5px] opacity-90">{config.detalle}</p>
-      </div>
-    </div>
-  );
-}
 
 const AVATAR_BG = ["bg-teal-600", "bg-primary-700", "bg-slate-500"];
 
@@ -110,7 +64,7 @@ export default function DashboardPage() {
       </AppBar>
 
       <div className="px-5">
-        <BannerVerificacion />
+        <BannerVerificacion rol="proveedor" />
         {/* KPI principal: ventas del mes */}
         <div className="gradient-brand relative mb-3 overflow-hidden rounded-card p-5 text-white">
           <div className="absolute -bottom-10 -right-8 h-40 w-40 rounded-full bg-white/10" />

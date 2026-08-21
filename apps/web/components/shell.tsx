@@ -97,8 +97,8 @@ function usePendientes(rol: "proveedor" | "farmacia" | "admin"): number {
           : rol === "farmacia"
             ? api.get<{ novedades: number }>("/farmacia/resumen").then((d) => d.novedades)
             : api
-                .get<{ proveedores_en_revision: number }>("/admin/resumen")
-                .then((d) => d.proveedores_en_revision);
+                .get<{ proveedores_en_revision: number; farmacias_en_revision?: number }>("/admin/resumen")
+                .then((d) => d.proveedores_en_revision + (d.farmacias_en_revision ?? 0));
       consulta.then((v) => vivo && setN(v)).catch(() => {});
     };
     tick();

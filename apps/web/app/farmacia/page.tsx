@@ -4,6 +4,7 @@ import { ArrowRight, History, Layers, Pill, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { BannerVerificacion } from "@/components/banner-verificacion";
 import { AppBar } from "@/components/shell";
 import { Card, Chip, EmptyState, SearchBar, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -95,6 +96,9 @@ export default function BuscarPage() {
       </AppBar>
 
       <div className="px-5">
+        {/* Estado de verificación: sin aprobación no se puede comprar. */}
+        <BannerVerificacion rol="farmacia" />
+
         <SearchBar value={q} onChange={setQ} placeholder="Buscar medicamento…" className="mb-3" />
 
         {/* Pedido en curso (f1): atajo al carrito. */}

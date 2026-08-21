@@ -240,7 +240,58 @@ export type ProveedoresAdminResult = {
 
 export type AdminResumen = {
   proveedores_en_revision: number;
+  farmacias_en_revision?: number;
   solicitudes_pendientes: number;
+};
+
+/* ------------------------------------------------------------------ */
+/* Verificación documental (Cámara de comercio, NIT/RUT, cédula).      */
+/* ------------------------------------------------------------------ */
+
+export type TipoDocumento = "camara_comercio" | "nit_rut" | "cedula_representante";
+export type EstadoDocumento = "subido" | "aprobado" | "rechazado";
+
+export type DocumentoVerificacion = {
+  id: string;
+  tipo: TipoDocumento;
+  estado: EstadoDocumento;
+  motivo_rechazo?: string | null;
+  nombre_archivo: string;
+  mime: string;
+  tamano_bytes: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DocumentosResult = {
+  tipos_requeridos: TipoDocumento[];
+  documentos: DocumentoVerificacion[];
+  completo: boolean;
+};
+
+export type AdminDocumento = DocumentoVerificacion & { url?: string | null };
+
+export type AdminDocumentosResult = {
+  organizacion_id: string;
+  razon_social: string;
+  tipos_requeridos: TipoDocumento[];
+  documentos: AdminDocumento[];
+};
+
+export type FarmaciaAdminItem = {
+  id: string;
+  razon_social: string;
+  nit?: string | null;
+  ciudad?: string | null;
+  estado_verificacion: EstadoVerificacion;
+  motivo_decision?: string | null;
+  created_at: string;
+  pedidos: number;
+};
+
+export type FarmaciasAdminResult = {
+  farmacias: FarmaciaAdminItem[];
+  conteos: Record<string, number>;
 };
 
 export type SolicitudMaestroAdmin = {

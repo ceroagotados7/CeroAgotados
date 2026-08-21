@@ -20,10 +20,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     data: { session },
   } = await supabase.auth.getSession();
 
+  // Con FormData el navegador fija el Content-Type (incluye el boundary).
+  const esFormData = init.body instanceof FormData;
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(esFormData ? {} : { "Content-Type": "application/json" }),
       ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
       ...(init.headers ?? {}),
     },
@@ -54,4 +56,7 @@ export const api = {
   patch: <T>(path: string, data?: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(data ?? {}) }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  /** Subida multipart (p. ej. documentos de verificación). */
+  upload: <T>(path: string, form: FormData) =>
+    request<T>(path, { method: "POST", body: form }),
 };

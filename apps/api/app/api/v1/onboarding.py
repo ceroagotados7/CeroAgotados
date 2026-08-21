@@ -56,7 +56,9 @@ def _registrar_organizacion(
     user_id = user.id
 
     # 2) Organización. Si falla, revertimos el usuario (sin huérfanos).
-    # Proveedores nacen EN REVISIÓN (gate del admin); las farmacias entran directo.
+    # Regla dura del fundador (2026-08-21): TODA organización — proveedor o
+    # farmacia — nace EN REVISIÓN y no vende ni compra hasta que el admin la
+    # apruebe (tras revisar su documentación legal).
     try:
         org_res = (
             db.table("organizaciones")
@@ -66,7 +68,7 @@ def _registrar_organizacion(
                     "razon_social": payload.razon_social,
                     "nit": payload.nit,
                     "ciudad": payload.ciudad,
-                    "estado_verificacion": "aprobado" if tipo == "farmacia" else "en_revision",
+                    "estado_verificacion": "en_revision",
                 }
             )
             .execute()

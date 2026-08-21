@@ -9,10 +9,14 @@ import { Avatar, Button, Card, EmptyState } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { cartTotal, clearCart, removeFromCart, setCantidad, useCart, type CartItem } from "@/lib/cart";
 import { cop } from "@/lib/format";
+import { useMe } from "@/lib/me";
 import type { PedidoCreadoResult } from "@/lib/types";
 
 export default function PedidoPage() {
   const cart = useCart();
+  const me = useMe();
+  // Regla dura: una farmacia sin aprobar navega y compara, pero NO compra.
+  const aprobada = !me || me.organizacion?.estado_verificacion === "aprobado";
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creado, setCreado] = useState<PedidoCreadoResult | null>(null);
@@ -41,7 +45,9 @@ export default function PedidoPage() {
           ? "El stock de alguna opción cambió. Revisa las cantidades e inténtalo de nuevo."
           : e instanceof ApiCallError && e.message.includes("oferta_no_disponible")
             ? "Alguna opción ya no está disponible. Quítala y vuelve a compararla."
-            : "No se pudo confirmar el pedido. Inténtalo de nuevo.";
+            : e instanceof ApiCallError && e.message.includes("farmacia_no_aprobada")
+              ? "Tu cuenta aún no está aprobada: podrás confirmar pedidos cuando el equipo la verifique."
+              : "No se pudo confirmar el pedido. Inténtalo de nuevo.";
       setError(msg);
       setEnviando(false);
     }
@@ -188,10 +194,16 @@ export default function PedidoPage() {
                 <Plus size={17} /> Continuar pedido
               </Button>
             </Link>
-            <Button size="lg" block className="flex-1" disabled={enviando} onClick={confirmar}>
+            <Button size="lg" block className="flex-1" disabled={enviando || !aprobada} onClick={confirmar}>
               {enviando ? "Confirmando…" : "Confirmar pedido"}
             </Button>
           </div>
+          {!aprobada && (
+            <p className="mt-2 text-center text-[12px] text-amber-700">
+              Tu cuenta está en verificación: podrás confirmar el pedido cuando el equipo la
+              apruebe. Tu carrito se conserva.
+            </p>
+          )}
         </div>
       )}
     </>

@@ -97,10 +97,29 @@ class DecisionProveedorRequest(BaseModel):
     motivo: str | None = None  # obligatorio al rechazar/suspender
 
 
+class FarmaciaAdminItem(BaseModel):
+    """Fila de la bandeja de verificación de farmacias."""
+
+    id: str
+    razon_social: str
+    nit: str | None = None
+    ciudad: str | None = None
+    estado_verificacion: str
+    motivo_decision: str | None = None
+    created_at: str
+    pedidos: int  # órdenes creadas por la farmacia (actividad)
+
+
+class FarmaciasAdminResult(BaseModel):
+    farmacias: list[FarmaciaAdminItem]
+    conteos: dict[str, int]  # por estado_verificacion
+
+
 class AdminResumen(BaseModel):
     """Conteo ligero para el badge del panel admin."""
 
     proveedores_en_revision: int
+    farmacias_en_revision: int = 0
     solicitudes_pendientes: int = 0
 
 

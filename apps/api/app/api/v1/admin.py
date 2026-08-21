@@ -12,6 +12,8 @@ from app.schemas.admin import (
     AdminResumen,
     DecisionProveedorRequest,
     DecisionSolicitudRequest,
+    FarmaciaAdminItem,
+    FarmaciasAdminResult,
     MargenProducto,
     ProveedorAdminItem,
     ProveedoresAdminResult,
@@ -22,6 +24,12 @@ from app.schemas.admin import (
     VentaOrg,
 )
 from app.schemas.common import ApiResponse
+from app.schemas.verificacion import (
+    TIPOS_DOCUMENTO,
+    AdminDocumento,
+    AdminDocumentosResult,
+    DecisionDocumentoRequest,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -126,6 +134,13 @@ def admin_resumen(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[AdminResum
         .eq("estado_verificacion", "en_revision")
         .execute()
     )
+    farm = (
+        db.table("organizaciones")
+        .select("id", count="exact")
+        .eq("tipo", "farmacia")
+        .eq("estado_verificacion", "en_revision")
+        .execute()
+    )
     sol = (
         db.table("solicitudes_maestro")
         .select("id", count="exact")
@@ -135,6 +150,7 @@ def admin_resumen(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[AdminResum
     return ApiResponse(
         data=AdminResumen(
             proveedores_en_revision=res.count or 0,
+            farmacias_en_revision=farm.count or 0,
             solicitudes_pendientes=sol.count or 0,
         )
     )
@@ -259,6 +275,53 @@ def admin_proveedores(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[Provee
     return ApiResponse(data=ProveedoresAdminResult(proveedores=filas, conteos=conteos))
 
 
+def _decidir_organizacion(
+    org_id: str, tipo: str, payload: DecisionProveedorRequest, admin: str, db
+) -> dict:
+    """Aplica la decisión del admin sobre una organización del `tipo` dado.
+
+    Regla dura del fundador: ninguna organización sin aprobar vende ni compra.
+    Motivo obligatorio salvo aprobar; toda decisión queda en la bitácora.
+    Devuelve la fila actualizada de la organización.
+    """
+    if payload.accion not in _DECISIONES_VALIDAS:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "accion_invalida")
+    if payload.accion != "aprobado" and not (payload.motivo or "").strip():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "motivo_obligatorio")
+
+    org = (
+        db.table("organizaciones").select("id, tipo").eq("id", org_id).execute()
+    ).data
+    if not org or org[0]["tipo"] != tipo:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"{tipo}_no_encontrado")
+
+    motivo = (payload.motivo or "").strip() or None
+    db.table("organizaciones").update(
+        {
+            "estado_verificacion": payload.accion,
+            "verificado": payload.accion == "aprobado",
+            "motivo_decision": motivo,
+        }
+    ).eq("id", org_id).execute()
+
+    db.table("organizacion_eventos").insert(
+        {
+            "organizacion_id": org_id,
+            "actor_id": admin,
+            "tipo": payload.accion,
+            "payload": {"motivo": motivo} if motivo else {},
+        }
+    ).execute()
+
+    return (
+        db.table("organizaciones")
+        .select("id, razon_social, nit, ciudad, estado_verificacion, motivo_decision, created_at")
+        .eq("id", org_id)
+        .single()
+        .execute()
+    ).data
+
+
 @router.post("/proveedores/{proveedor_id}/decision")
 def admin_decidir_proveedor(
     proveedor_id: str,
@@ -271,49 +334,143 @@ def admin_decidir_proveedor(
     Al aprobar, sus ofertas entran a la comparación de las farmacias; al
     rechazar/suspender salen del aire (el catálogo del proveedor se conserva).
     """
-    if payload.accion not in _DECISIONES_VALIDAS:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "accion_invalida")
-    if payload.accion != "aprobado" and not (payload.motivo or "").strip():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "motivo_obligatorio")
-
-    org = (
-        db.table("organizaciones")
-        .select("id, tipo")
-        .eq("id", proveedor_id)
-        .execute()
-    ).data
-    if not org or org[0]["tipo"] != "proveedor":
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "proveedor_no_encontrado")
-
-    motivo = (payload.motivo or "").strip() or None
-    db.table("organizaciones").update(
-        {
-            "estado_verificacion": payload.accion,
-            "verificado": payload.accion == "aprobado",
-            "motivo_decision": motivo,
-        }
-    ).eq("id", proveedor_id).execute()
-
-    db.table("organizacion_eventos").insert(
-        {
-            "organizacion_id": proveedor_id,
-            "actor_id": admin,
-            "tipo": payload.accion,
-            "payload": {"motivo": motivo} if motivo else {},
-        }
-    ).execute()
-
-    fila = (
-        db.table("organizaciones")
-        .select("id, razon_social, nit, ciudad, estado_verificacion, motivo_decision, created_at")
-        .eq("id", proveedor_id)
-        .single()
-        .execute()
-    ).data
+    fila = _decidir_organizacion(proveedor_id, "proveedor", payload, admin, db)
     n = (
         db.table("ofertas").select("id", count="exact").eq("organizacion_id", proveedor_id).execute()
     ).count or 0
     return ApiResponse(data=ProveedorAdminItem(**fila, medicamentos=n))
+
+
+# --------------------------------------------------------------------------- #
+# Verificación de farmacias (mismo gate: sin aprobación no se compra)
+# --------------------------------------------------------------------------- #
+
+@router.get("/farmacias")
+def admin_farmacias(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[FarmaciasAdminResult]:
+    """Bandeja de verificación: todas las farmacias con su estado y conteos."""
+    orgs = (
+        db.table("organizaciones")
+        .select("id, razon_social, nit, ciudad, estado_verificacion, motivo_decision, created_at")
+        .eq("tipo", "farmacia")
+        .order("created_at", desc=True)
+        .execute()
+    ).data or []
+
+    ordenes = (db.table("ordenes").select("farmacia_id").execute()).data or []
+    n_pedidos: dict[str, int] = {}
+    for o in ordenes:
+        n_pedidos[o["farmacia_id"]] = n_pedidos.get(o["farmacia_id"], 0) + 1
+
+    conteos: dict[str, int] = {"en_revision": 0, "aprobado": 0, "rechazado": 0, "suspendido": 0}
+    filas = []
+    for o in orgs:
+        conteos[o["estado_verificacion"]] = conteos.get(o["estado_verificacion"], 0) + 1
+        filas.append(FarmaciaAdminItem(**o, pedidos=n_pedidos.get(o["id"], 0)))
+    return ApiResponse(data=FarmaciasAdminResult(farmacias=filas, conteos=conteos))
+
+
+@router.post("/farmacias/{farmacia_id}/decision")
+def admin_decidir_farmacia(
+    farmacia_id: str,
+    payload: DecisionProveedorRequest,
+    admin: AdminUserId,
+    db: SupabaseDep,
+) -> ApiResponse[FarmaciaAdminItem]:
+    """Aprueba, rechaza o suspende a una farmacia. Motivo obligatorio salvo aprobar.
+
+    Sin aprobación la farmacia puede navegar y comparar, pero no crear pedidos.
+    """
+    fila = _decidir_organizacion(farmacia_id, "farmacia", payload, admin, db)
+    n = (
+        db.table("ordenes").select("id", count="exact").eq("farmacia_id", farmacia_id).execute()
+    ).count or 0
+    return ApiResponse(data=FarmaciaAdminItem(**fila, pedidos=n))
+
+
+# --------------------------------------------------------------------------- #
+# Documentos de verificación (el admin los revisa junto a la decisión)
+# --------------------------------------------------------------------------- #
+
+_BUCKET_DOCS = "documentos-verificacion"
+_DOC_COLS_ADMIN = (
+    "id, tipo, estado, motivo_rechazo, nombre_archivo, mime, tamano_bytes,"
+    " storage_path, created_at, updated_at"
+)
+
+
+@router.get("/organizaciones/{org_id}/documentos")
+def admin_documentos_de_org(
+    org_id: str, admin: AdminUserId, db: SupabaseDep
+) -> ApiResponse[AdminDocumentosResult]:
+    """Documentos de una organización con URL firmada de corta vida (10 min)."""
+    org = (
+        db.table("organizaciones").select("id, razon_social").eq("id", org_id).execute()
+    ).data
+    if not org:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "organizacion_no_encontrada")
+
+    filas = (
+        db.table("documentos_verificacion")
+        .select(_DOC_COLS_ADMIN)
+        .eq("organizacion_id", org_id)
+        .execute()
+    ).data or []
+
+    docs: list[AdminDocumento] = []
+    for f in filas:
+        url = None
+        try:
+            firmada = db.storage.from_(_BUCKET_DOCS).create_signed_url(f["storage_path"], 600)
+            url = firmada.get("signedURL") or firmada.get("signedUrl")
+        except Exception:  # noqa: BLE001 — sin URL el metadato sigue siendo útil
+            url = None
+        campos = {k: f[k] for k in f if k != "storage_path"}
+        docs.append(AdminDocumento(**campos, url=url))
+
+    return ApiResponse(
+        data=AdminDocumentosResult(
+            organizacion_id=org_id,
+            razon_social=org[0]["razon_social"],
+            tipos_requeridos=list(TIPOS_DOCUMENTO),
+            documentos=docs,
+        )
+    )
+
+
+@router.post("/documentos/{doc_id}/decision")
+def admin_decidir_documento(
+    doc_id: str,
+    payload: DecisionDocumentoRequest,
+    admin: AdminUserId,
+    db: SupabaseDep,
+) -> ApiResponse[AdminDocumento]:
+    """Marca un documento como aprobado o rechazado (estado POR documento).
+
+    El rechazo exige motivo; la organización lo ve y puede re-subir (lo que
+    devuelve el documento a estado 'subido').
+    """
+    if payload.accion == "rechazado" and not (payload.motivo or "").strip():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "motivo_obligatorio")
+    doc = (
+        db.table("documentos_verificacion").select("id").eq("id", doc_id).execute()
+    ).data
+    if not doc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "documento_no_encontrado")
+
+    fila = (
+        db.table("documentos_verificacion")
+        .update(
+            {
+                "estado": payload.accion,
+                "motivo_rechazo": (payload.motivo or "").strip() or None,
+                "revisado_por": admin,
+            }
+        )
+        .eq("id", doc_id)
+        .execute()
+    ).data[0]
+    campos = {k: fila[k] for k in fila if k in AdminDocumento.model_fields}
+    return ApiResponse(data=AdminDocumento(**campos))
 
 
 @router.get("/proveedores/{proveedor_id}")
