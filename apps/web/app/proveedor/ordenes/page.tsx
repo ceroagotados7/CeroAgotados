@@ -1,9 +1,10 @@
 "use client";
 
-import { CheckCheck, ClipboardList, Search } from "lucide-react";
+import { CheckCheck, ClipboardList, Printer, Search, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { OrdenImprimible } from "@/components/orden-imprimible";
 import { AppBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, CardFlat, Chip, EmptyState, IconButton, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
@@ -19,6 +20,8 @@ export default function OrdenesPage() {
   const [filtro, setFiltro] = useState<Filtro>("pendientes");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Orden montada en la hoja imprimible (impresión directa desde la bandeja).
+  const [imprimir, setImprimir] = useState<Orden | null>(null);
 
   async function load() {
     setOrdenes(await api.get<Orden[]>("/ordenes/"));
@@ -33,6 +36,16 @@ export default function OrdenesPage() {
       active = false;
     };
   }, []);
+
+  // window.print() se dispara DESPUÉS de montar la hoja de la orden elegida.
+  useEffect(() => {
+    if (!imprimir) return;
+    const raf = requestAnimationFrame(() => {
+      window.print();
+      setImprimir(null);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [imprimir]);
 
   const counts = useMemo(() => {
     const l = ordenes ?? [];
@@ -103,8 +116,14 @@ export default function OrdenesPage() {
           <EmptyState icon={<ClipboardList size={32} />} title="Sin órdenes" hint="Aquí verás los pedidos de las farmacias." />
         ) : (
           visibles.map((o, i) =>
-            i === 0 && o.estado === "pendiente" ? (
-              <FeaturedOrden key={o.id} orden={o} busy={busyId === o.id} onResponder={responder} />
+            o.estado === "pendiente" ? (
+              <OrdenPendiente
+                key={o.id}
+                orden={o}
+                busy={busyId === o.id}
+                onResponder={responder}
+                onImprimir={() => setImprimir(o)}
+              />
             ) : (
               <CompactOrden key={o.id} orden={o} index={i} />
             ),
@@ -112,33 +131,50 @@ export default function OrdenesPage() {
         )}
         {error && <p className="text-sm text-danger">{error}</p>}
       </div>
+
+      {imprimir && <OrdenImprimible orden={imprimir} />}
     </>
   );
 }
 
-function FeaturedOrden({
+/** Orden pendiente con las acciones A LA VISTA (feedback del fundador):
+ *  aceptar todo, aceptar parcial (→ detalle) o rechazar, sin tener que
+ *  descubrir que la tarjeta es clicable. El badge "Pendiente" (redundante en
+ *  esta bandeja) cede su lugar al botón de imprimir para revisar en bodega. */
+function OrdenPendiente({
   orden,
   busy,
   onResponder,
+  onImprimir,
 }: {
   orden: Orden;
   busy: boolean;
   onResponder: (o: Orden, aceptar: boolean) => void;
+  onImprimir: () => void;
 }) {
+  const [confirmaRechazo, setConfirmaRechazo] = useState(false);
   const total = orden.items.reduce((s, it) => s + it.cantidad_solicitada * it.precio_unitario_snapshot, 0);
   return (
     <Card className="border-l-4 border-amber-500 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <Link href={`/proveedor/ordenes/${orden.id}`} className="flex items-center gap-2.5">
-          <Avatar className="h-9 w-9 bg-teal-600 text-[12px]">{iniciales(orden.farmacia?.razon_social ?? "F")}</Avatar>
-          <div>
-            <p className="text-[14px] font-semibold leading-none">{orden.farmacia?.razon_social ?? "Farmacia"}</p>
+        <Link href={`/proveedor/ordenes/${orden.id}`} className="flex min-w-0 items-center gap-2.5">
+          <Avatar className="h-9 w-9 flex-none bg-teal-600 text-[12px]">{iniciales(orden.farmacia?.razon_social ?? "F")}</Avatar>
+          <div className="min-w-0">
+            <p className="truncate text-[14px] font-semibold leading-none">{orden.farmacia?.razon_social ?? "Farmacia"}</p>
             <p className="mt-1 text-[11.5px] text-muted">
               #{orden.codigo} · {hace(orden.created_at)}
             </p>
           </div>
         </Link>
-        <Badge tone="amber">Pendiente</Badge>
+        <button
+          type="button"
+          onClick={onImprimir}
+          className="flex flex-none items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[12px] font-semibold text-soft transition hover:border-primary hover:text-primary-700"
+          aria-label={`Imprimir el pedido ${orden.codigo} para revisar en bodega`}
+          title="Imprimir pedido para revisar en bodega"
+        >
+          <Printer size={14} /> Imprimir
+        </button>
       </div>
       <div className="divider mb-3" />
       <div className="mb-3 space-y-2">
@@ -155,14 +191,38 @@ function FeaturedOrden({
         <span className="text-[13px] text-muted">Total de la orden</span>
         <span className="font-display text-[18px] font-extrabold text-primary-800">{cop(total)}</span>
       </div>
-      <div className="flex gap-2.5">
-        <Button variant="outline" size="md" className="flex-1" disabled={busy} onClick={() => onResponder(orden, false)}>
-          Rechazar
-        </Button>
-        <Button variant="primary" size="md" className="flex-[1.6]" disabled={busy} onClick={() => onResponder(orden, true)}>
-          <CheckCheck size={17} /> {busy ? "Procesando…" : "Aceptar y preparar"}
-        </Button>
-      </div>
+
+      {confirmaRechazo ? (
+        <div>
+          <p className="mb-2 text-center text-[12.5px] text-muted">
+            ¿Rechazar la orden completa? La farmacia podrá pedir a otro proveedor.
+          </p>
+          <div className="flex gap-2.5">
+            <Button variant="outline" size="md" className="flex-1" disabled={busy} onClick={() => setConfirmaRechazo(false)}>
+              No, volver
+            </Button>
+            <Button size="md" className="flex-1 !bg-danger" disabled={busy} onClick={() => onResponder(orden, false)}>
+              {busy ? "Rechazando…" : "Sí, rechazar"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Button variant="primary" size="md" block disabled={busy} onClick={() => onResponder(orden, true)}>
+            <CheckCheck size={17} /> {busy ? "Procesando…" : "Aceptar y preparar todo"}
+          </Button>
+          <div className="flex gap-2.5">
+            <Button variant="outline" size="md" className="flex-1 text-danger" disabled={busy} onClick={() => setConfirmaRechazo(true)}>
+              Rechazar
+            </Button>
+            <Link href={`/proveedor/ordenes/${orden.id}`} className="flex-1">
+              <Button variant="outline" size="md" block disabled={busy}>
+                <SlidersHorizontal size={15} /> Aceptar parcial
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
