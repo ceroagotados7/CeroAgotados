@@ -45,6 +45,12 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
 
   const gestionado = pedido.estado !== "pendiente";
   const noDisponible = pedido.items.filter((i) => i.estado_item === "rechazado");
+  // Regla del fundador: una aceptación PARCIAL también significa que el
+  // proveedor no tenía — el faltante se puede pedir a otro proveedor.
+  const conFaltante = (i: (typeof pedido.items)[number]) =>
+    i.estado_item === "rechazado" ||
+    (i.estado_item === "aceptado" && i.cantidad_aceptada < i.cantidad_solicitada);
+  const faltantes = pedido.estado === "cancelada" ? [] : pedido.items.filter(conFaltante);
   const descuento = noDisponible.reduce(
     (acc, i) => acc + i.cantidad_solicitada * i.precio_unitario_snapshot,
     0,
@@ -86,15 +92,22 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
           </Badge>
         </Card>
 
-        {/* Aviso de novedades (f6): ítems sin stock, con acción directa. */}
-        {noDisponible.length > 0 && (
+        {/* Aviso de novedades (f6): faltantes (sin stock O parciales), con acción. */}
+        {faltantes.length > 0 && (
           <Card className="mb-3 border border-amber-200 bg-amber-50/60 p-3.5">
             <p className="text-[13px] font-semibold text-amber-800">
-              {noDisponible.length} producto{noDisponible.length !== 1 && "s"} sin stock
+              {faltantes.length} producto{faltantes.length !== 1 && "s"} con faltante
             </p>
             <p className="mt-0.5 text-[12.5px] text-amber-700">
-              El proveedor no tenía {noDisponible.map((i) => i.producto?.nombre ?? "un producto").join(", ")}.
-              Pídelo a otro proveedor — este pedido no se modifica.
+              El proveedor no tenía{" "}
+              {faltantes
+                .map((i) =>
+                  i.estado_item === "rechazado"
+                    ? (i.producto?.nombre ?? "un producto")
+                    : `${i.cantidad_solicitada - i.cantidad_aceptada} de las ${i.cantidad_solicitada} cajas de ${i.producto?.nombre ?? "un producto"}`,
+                )
+                .join("; ")}
+              . Pide el faltante a otro proveedor — este pedido no se modifica.
             </p>
           </Card>
         )}
@@ -136,13 +149,16 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                     </Badge>
                   </div>
                 </div>
-                {/* Acción directa: comprar el producto agotado a otro proveedor. */}
-                {rechazado && (
+                {/* Acción directa: comprar el faltante (rechazo O parcial) a otro proveedor. */}
+                {conFaltante(i) && (
                   <Link
                     href={`/farmacia/comparar/${i.producto_maestro_id}`}
                     className="mt-2.5 flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 py-2 text-[12.5px] font-semibold text-amber-800 transition hover:border-amber-400"
                   >
-                    <Search size={14} /> Buscar otras opciones de {i.producto?.nombre ?? "este producto"}
+                    <Search size={14} />
+                    {rechazado
+                      ? `Buscar otras opciones de ${i.producto?.nombre ?? "este producto"}`
+                      : `Pedir ${i.cantidad_solicitada - i.cantidad_aceptada} caja${i.cantidad_solicitada - i.cantidad_aceptada !== 1 ? "s" : ""} faltante${i.cantidad_solicitada - i.cantidad_aceptada !== 1 ? "s" : ""} a otro proveedor`}
                   </Link>
                 )}
               </div>
