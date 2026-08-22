@@ -10,7 +10,7 @@ from app.schemas.ordenes import AceptarOrdenRequest, Orden
 router = APIRouter(prefix="/ordenes", tags=["ordenes"])
 
 _ITEM_PRODUCTO = "producto:producto_maestro!orden_items_producto_maestro_id_fkey(id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria)"
-_FARMACIA = "farmacia:organizaciones!ordenes_farmacia_id_fkey(razon_social, nit, ciudad)"
+_FARMACIA = "farmacia:organizaciones!ordenes_farmacia_id_fkey(razon_social, nit, ciudad, direccion)"
 _SELECT = f"*, {_FARMACIA}, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
 
 

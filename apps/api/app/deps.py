@@ -130,7 +130,7 @@ def get_user_org(user_id: CurrentUserId, db: SupabaseDep) -> dict:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "sin_organizacion")
     org = (
         db.table("organizaciones")
-        .select("id, tipo, razon_social, nit, ciudad, verificado, estado_verificacion, motivo_decision")
+        .select("id, tipo, razon_social, nit, ciudad, direccion, verificado, estado_verificacion, motivo_decision")
         .eq("id", miembros.data[0]["organizacion_id"])
         .single()
         .execute()

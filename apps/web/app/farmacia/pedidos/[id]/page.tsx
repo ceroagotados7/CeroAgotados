@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCheck, PackageCheck, XCircle } from "lucide-react";
+import { CheckCheck, PackageCheck, Search, XCircle } from "lucide-react";
+import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 
 import { OrdenTimeline } from "@/components/orden-timeline";
@@ -85,7 +86,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
           </Badge>
         </Card>
 
-        {/* Aviso de novedades (f6): ítems sin stock. */}
+        {/* Aviso de novedades (f6): ítems sin stock, con acción directa. */}
         {noDisponible.length > 0 && (
           <Card className="mb-3 border border-amber-200 bg-amber-50/60 p-3.5">
             <p className="text-[13px] font-semibold text-amber-800">
@@ -93,7 +94,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
             </p>
             <p className="mt-0.5 text-[12.5px] text-amber-700">
               El proveedor no tenía {noDisponible.map((i) => i.producto?.nombre ?? "un producto").join(", ")}.
-              Puedes pedirlo a otro proveedor desde Buscar, sin rehacer este pedido.
+              Pídelo a otro proveedor — este pedido no se modifica.
             </p>
           </Card>
         )}
@@ -110,29 +111,40 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                 ? i.cantidad_aceptada
                 : i.cantidad_solicitada;
             return (
-              <div key={i.id} className="flex items-center gap-3 p-3.5">
-                <div className="min-w-0 flex-1">
-                  <p className={`text-[13.5px] font-semibold leading-tight ${rechazado ? "text-muted line-through" : ""}`}>
-                    {i.producto?.nombre ?? "Producto"}
-                  </p>
-                  <p className="mt-0.5 text-[12px] text-muted">
-                    {cantidad} caja{cantidad !== 1 && "s"} × {cop(i.precio_unitario_snapshot)}
-                    {gestionado && i.estado_item === "aceptado" && i.cantidad_aceptada < i.cantidad_solicitada && (
-                      <span className="text-amber-600"> · de {i.cantidad_solicitada} pedidas</span>
-                    )}
-                  </p>
+              <div key={i.id} className="p-3.5">
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-[13.5px] font-semibold leading-tight ${rechazado ? "text-muted line-through" : ""}`}>
+                      {i.producto?.nombre ?? "Producto"}
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-muted">
+                      {cantidad} caja{cantidad !== 1 && "s"} × {cop(i.precio_unitario_snapshot)}
+                      {gestionado && i.estado_item === "aceptado" && i.cantidad_aceptada < i.cantidad_solicitada && (
+                        <span className="text-amber-600"> · de {i.cantidad_solicitada} pedidas</span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex-none text-right">
+                    <p className={`font-display text-[14px] font-bold ${rechazado ? "text-muted" : ""}`}>
+                      {cop(cantidad * i.precio_unitario_snapshot)}
+                    </p>
+                    <Badge
+                      tone={rechazado ? "red" : i.estado_item === "aceptado" ? "green" : i.estado_item === "sustituido" ? "teal" : "amber"}
+                      className="mt-1"
+                    >
+                      {ESTADO_ITEM_LABEL[i.estado_item] ?? i.estado_item}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex-none text-right">
-                  <p className={`font-display text-[14px] font-bold ${rechazado ? "text-muted" : ""}`}>
-                    {cop(cantidad * i.precio_unitario_snapshot)}
-                  </p>
-                  <Badge
-                    tone={rechazado ? "red" : i.estado_item === "aceptado" ? "green" : i.estado_item === "sustituido" ? "teal" : "amber"}
-                    className="mt-1"
+                {/* Acción directa: comprar el producto agotado a otro proveedor. */}
+                {rechazado && (
+                  <Link
+                    href={`/farmacia/comparar/${i.producto_maestro_id}`}
+                    className="mt-2.5 flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 py-2 text-[12.5px] font-semibold text-amber-800 transition hover:border-amber-400"
                   >
-                    {ESTADO_ITEM_LABEL[i.estado_item] ?? i.estado_item}
-                  </Badge>
-                </div>
+                    <Search size={14} /> Buscar otras opciones de {i.producto?.nombre ?? "este producto"}
+                  </Link>
+                )}
               </div>
             );
           })}

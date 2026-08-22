@@ -68,6 +68,7 @@ def _registrar_organizacion(
                     "razon_social": payload.razon_social,
                     "nit": payload.nit,
                     "ciudad": payload.ciudad,
+                    "direccion": (payload.direccion or "").strip() or None,
                     "estado_verificacion": "en_revision",
                 }
             )

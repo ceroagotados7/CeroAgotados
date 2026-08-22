@@ -54,6 +54,7 @@ export type OrgRef = {
   razon_social?: string | null;
   nit?: string | null;
   ciudad?: string | null;
+  direccion?: string | null;
 };
 
 /** Hito del timeline de una orden (sin actor: no expone identidades). */
@@ -109,6 +110,7 @@ export type Organizacion = {
   razon_social: string;
   nit?: string | null;
   ciudad?: string | null;
+  direccion?: string | null;
   verificado: boolean;
   estado_verificacion: EstadoVerificacion;
   motivo_decision?: string | null;

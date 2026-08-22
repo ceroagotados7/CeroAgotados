@@ -22,7 +22,7 @@ export function BannerVerificacion({ rol }: { rol: "proveedor" | "farmacia" }) {
       detalle:
         rol === "proveedor"
           ? "Puedes ir armando tu catálogo: será visible para las farmacias apenas te aprobemos."
-          : "Puedes explorar y comparar precios; podrás hacer pedidos apenas te aprobemos.",
+          : "Puedes explorar los precios; podrás hacer pedidos apenas te aprobemos.",
     },
     rechazado: {
       icono: <XCircle size={18} />,

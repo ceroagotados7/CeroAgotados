@@ -29,6 +29,7 @@ export default function RegistroPage() {
   const [razonSocial, setRazonSocial] = useState("");
   const [nit, setNit] = useState("");
   const [ciudad, setCiudad] = useState("");
+  const [direccion, setDireccion] = useState("");
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,12 +48,17 @@ export default function RegistroPage() {
       setError("La contraseña debe tener al menos 8 caracteres.");
       return;
     }
+    if (tipo === "farmacia" && direccion.trim().length < 5) {
+      setError("Escribe la dirección de tu farmacia: allí te entregarán los pedidos.");
+      return;
+    }
     setLoading(true);
     try {
       await api.post(`/onboarding/${tipo}`, {
         razon_social: razonSocial,
         nit: nit || null,
         ciudad: ciudad || null,
+        direccion: direccion.trim() || null,
         nombre,
         email,
         password,
@@ -138,6 +144,18 @@ export default function RegistroPage() {
               <input className="input pl-10" placeholder="Ciudad" value={ciudad} onChange={(e) => setCiudad(e.target.value)} />
             </div>
           </div>
+          {tipo === "farmacia" && (
+            <div className="relative mb-3">
+              <MapPin size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+              <input
+                className="input pl-11"
+                placeholder="Dirección de la farmacia (ahí te entregan los pedidos)"
+                value={direccion}
+                onChange={(e) => setDireccion(e.target.value)}
+                required
+              />
+            </div>
+          )}
 
           <p className="label mt-2">Responsable de la cuenta</p>
           <div className="relative mb-3">
@@ -191,12 +209,12 @@ export default function RegistroPage() {
 
           {error && <p className="mb-3 text-sm text-danger">{error}</p>}
 
-          {tipo === "proveedor" && (
-            <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
-              Tu cuenta quedará <b>en revisión</b> del equipo de Cero Agotados. Podrás armar tu
-              catálogo de inmediato; será visible para las farmacias cuando te aprobemos.
-            </p>
-          )}
+          <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+            Tu cuenta quedará <b>en revisión</b> del equipo de Cero Agotados.{" "}
+            {tipo === "proveedor"
+              ? "Podrás armar tu catálogo de inmediato; será visible para las farmacias cuando te aprobemos."
+              : "Podrás explorar los precios de inmediato; podrás hacer pedidos cuando te aprobemos."}
+          </p>
 
           <Button type="submit" size="lg" block disabled={loading}>
             {loading ? "Creando cuenta…" : "Crear cuenta"} <ArrowRight size={18} />

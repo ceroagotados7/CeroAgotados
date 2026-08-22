@@ -80,7 +80,7 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
 
   return (
     <>
-      <BackBar title={data.producto.nombre} subtitle="Comparar opciones" backHref="/farmacia" />
+      <BackBar title={data.producto.nombre} subtitle="Comprar al mejor precio" backHref="/farmacia" />
 
       <div className="px-5 pb-44">
         {presentacion && <p className="mb-3 px-1 text-[12.5px] text-muted">{presentacion}</p>}

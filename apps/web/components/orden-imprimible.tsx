@@ -35,6 +35,11 @@ export function OrdenImprimible({ orden }: { orden: Orden }) {
         {orden.farmacia?.ciudad ? ` · ${orden.farmacia.ciudad}` : ""}
         {orden.farmacia?.nit ? ` · NIT ${orden.farmacia.nit}` : ""}
       </p>
+      {orden.farmacia?.direccion && (
+        <p style={{ margin: "2px 0 0" }}>
+          Entregar en: <b>{orden.farmacia.direccion}</b>
+        </p>
+      )}
       <p style={{ margin: "2px 0 0" }}>Recibido: {fechaHora(orden.created_at)}</p>
       <table>
         <thead>

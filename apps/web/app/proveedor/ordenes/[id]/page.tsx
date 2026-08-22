@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, CheckCheck, Info, MessageCircle, Minus, Pill, Plus, Printer, Truck, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCheck, Info, MapPin, MessageCircle, Minus, Pill, Plus, Printer, Truck, X } from "lucide-react";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 
 import { OrdenImprimible } from "@/components/orden-imprimible";
@@ -142,6 +142,11 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
             <p className="mt-1 truncate text-[12px] text-muted">
               {[orden.farmacia?.ciudad, orden.farmacia?.nit && `NIT ${orden.farmacia.nit}`].filter(Boolean).join(" · ")}
             </p>
+            {orden.farmacia?.direccion && (
+              <p className="mt-0.5 flex items-center gap-1 truncate text-[12px] font-semibold text-teal-700">
+                <MapPin size={12} className="flex-none" /> {orden.farmacia.direccion}
+              </p>
+            )}
           </div>
           <IconButton aria-label="Mensaje" className="flex-none">
             <MessageCircle size={18} />

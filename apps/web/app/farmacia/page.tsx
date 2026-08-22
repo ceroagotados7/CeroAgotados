@@ -211,7 +211,7 @@ export default function BuscarPage() {
                         </span>
                       </p>
                       <span className="rounded-xl bg-primary px-3.5 py-2 text-[12.5px] font-semibold text-white">
-                        Comparar
+                        Comprar
                       </span>
                     </div>
                   </Card>

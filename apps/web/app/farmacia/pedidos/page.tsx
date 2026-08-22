@@ -73,7 +73,7 @@ export default function MisPedidosPage() {
             title={pedidos.length === 0 ? "Aún no has hecho pedidos" : "Nada por aquí"}
             hint={
               pedidos.length === 0
-                ? "Busca un medicamento, compara precios y haz tu primer pedido."
+                ? "Busca un medicamento, elige el mejor precio y haz tu primer pedido."
                 : "Prueba con otro filtro."
             }
           />

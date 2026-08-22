@@ -7,6 +7,7 @@ class Organizacion(BaseModel):
     razon_social: str
     nit: str | None = None
     ciudad: str | None = None
+    direccion: str | None = None
     verificado: bool
     # Gate "on live": en_revision | aprobado | rechazado | suspendido.
     estado_verificacion: str = "aprobado"
@@ -23,3 +24,9 @@ class Me(BaseModel):
     organizacion: Organizacion | None = None
     perfil: Perfil
     es_admin: bool = False
+
+
+class ActualizarOrganizacionRequest(BaseModel):
+    """Campos que la propia organización puede editar desde Cuenta."""
+
+    direccion: str  # se valida no-vacía en el endpoint (tras strip)

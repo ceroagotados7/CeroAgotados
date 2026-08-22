@@ -113,6 +113,11 @@ export default function AgregarPage() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-[14.5px] font-semibold leading-tight">{p.nombre}</p>
+                        {/* Presentación y LABORATORIO se conservan al seleccionar
+                            (feedback del fundador: antes desaparecían). */}
+                        <p className="mt-0.5 text-[12px] text-muted">
+                          {[presentacion, p.laboratorio].filter(Boolean).join(" · ")}
+                        </p>
                         {p.precio_min_mercado != null && (
                           <div className="mt-2 flex w-fit items-center gap-1.5 rounded-lg bg-teal-50 px-2 py-1 text-[12px] text-teal-700">
                             <Tag size={13} /> Más bajo del mercado: <b>{cop(p.precio_min_mercado)}</b>
@@ -121,7 +126,6 @@ export default function AgregarPage() {
                       </div>
                     </button>
                     <div className="mt-3 space-y-3 border-t border-primary-100 pt-3">
-                      {presentacion && <p className="text-[12px] text-muted">{presentacion}</p>}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="label">Precio (caja)</label>

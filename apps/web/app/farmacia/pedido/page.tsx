@@ -44,7 +44,7 @@ export default function PedidoPage() {
         e instanceof ApiCallError && e.message.includes("stock_insuficiente")
           ? "El stock de alguna opción cambió. Revisa las cantidades e inténtalo de nuevo."
           : e instanceof ApiCallError && e.message.includes("oferta_no_disponible")
-            ? "Alguna opción ya no está disponible. Quítala y vuelve a compararla."
+            ? "Alguna opción ya no está disponible. Quítala y vuelve a buscarla."
             : e instanceof ApiCallError && e.message.includes("farmacia_no_aprobada")
               ? "Tu cuenta aún no está aprobada: podrás confirmar pedidos cuando el equipo la verifique."
               : "No se pudo confirmar el pedido. Inténtalo de nuevo.";

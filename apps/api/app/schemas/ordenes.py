@@ -21,6 +21,7 @@ class OrgRef(BaseModel):
     razon_social: str | None = None
     nit: str | None = None
     ciudad: str | None = None
+    direccion: str | None = None  # de la farmacia: a dónde despacha el proveedor
 
 
 class OrdenEvento(BaseModel):
