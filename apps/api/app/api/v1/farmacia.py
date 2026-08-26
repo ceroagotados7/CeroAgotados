@@ -22,7 +22,10 @@ from app.schemas.ordenes import OrdenEvento, OrdenItem
 
 router = APIRouter(prefix="/farmacia", tags=["farmacia"])
 
-_PRODUCTO_COLS = "id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria"
+_PRODUCTO_COLS = (
+    "id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, "
+    "laboratorio, categoria, tipo, via_administracion, condicion_venta"
+)
 _ITEM_PRODUCTO = "producto:producto_maestro!orden_items_producto_maestro_id_fkey(id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria)"
 _PEDIDO_SELECT = f"id, codigo, estado, total, proveedor_id, proveedor_alias, created_at, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
 
@@ -73,8 +76,11 @@ def _proveedores_al_aire(db) -> list[str]:
 def buscar_productos(
     org_id: PharmacyOrgId,
     db: SupabaseDep,
-    q: Annotated[str | None, Query(description="Texto a buscar en nombre")] = None,
-    categoria: Annotated[str | None, Query()] = None,
+    q: Annotated[
+        str | None, Query(description="Texto libre: marca, principio activo o laboratorio")
+    ] = None,
+    categoria: Annotated[str | None, Query(description="Grupo farmacológico")] = None,
+    forma_farmaceutica: Annotated[str | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
 ) -> ApiResponse[list[ProductoBusqueda]]:
     """Productos del maestro que tienen ofertas activas con stock, con el número
@@ -103,13 +109,21 @@ def buscar_productos(
     if not conteo:
         return ApiResponse(data=[])
 
-    query = db.table("producto_maestro").select(_PRODUCTO_COLS).eq("activo", True)
-    query = query.in_("id", list(conteo.keys()))
-    if q:
-        query = query.ilike("nombre", f"%{q}%")
-    if categoria:
-        query = query.eq("categoria", categoria)
-    productos = (query.order("nombre").limit(limit).execute()).data or []
+    # Misma búsqueda que usa el proveedor: por marca, principio activo o
+    # laboratorio, tolerante a tildes y a errores de tecleo, ordenada por
+    # relevancia. `p_incluir` la restringe a lo que hoy tiene oferta con stock.
+    productos = (
+        db.rpc(
+            "buscar_productos_maestro",
+            {
+                "p_q": (q or "").strip() or None,
+                "p_categoria": categoria,
+                "p_forma": forma_farmaceutica,
+                "p_incluir": list(conteo.keys()),
+                "p_limit": limit,
+            },
+        ).execute()
+    ).data or []
 
     return ApiResponse(
         data=[

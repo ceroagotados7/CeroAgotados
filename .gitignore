@@ -35,3 +35,8 @@ scratchpad/
 # ngrok y binarios de túnel de demo (no versionar)
 tools/
 .tools/
+
+# ---- Scraping del catálogo (Farmalium + CUM INVIMA) ----
+# farmalium.db pesa ~540 MB (guarda el HTML crudo de cada ficha) y los CSV
+# rondan los 100 MB entre ambos: son insumos de la carga, no código.
+Documents/

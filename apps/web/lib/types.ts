@@ -14,7 +14,18 @@ export type ProductoMaestro = {
   presentacion?: string | null;
   laboratorio?: string | null;
   categoria?: string | null;
+  tipo?: string | null;
+  via_administracion?: string | null;
+  condicion_venta?: string | null;
   precio_min_mercado?: number | null;
+};
+
+/** Valores disponibles para los filtros del catálogo maestro. */
+export type CatalogoFacetas = {
+  categorias: string[];
+  formas_farmaceuticas: string[];
+  laboratorios: string[];
+  tipos: string[];
 };
 
 export type Oferta = {

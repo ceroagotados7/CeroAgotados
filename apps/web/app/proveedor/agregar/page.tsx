@@ -8,24 +8,56 @@ import { BackBar } from "@/components/shell";
 import { Button, SearchBar, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { cop } from "@/lib/format";
-import type { ProductoMaestro } from "@/lib/types";
+import type { CatalogoFacetas, ProductoMaestro } from "@/lib/types";
 
 type Seleccion = Record<string, { precio: string; stock: string }>;
+
+const PAGINA = 30;
 
 export default function AgregarPage() {
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [forma, setForma] = useState("");
+  const [laboratorio, setLaboratorio] = useState("");
+  const [tipo, setTipo] = useState("");
+  const [facetas, setFacetas] = useState<CatalogoFacetas | null>(null);
   const [resultados, setResultados] = useState<ProductoMaestro[] | null>(null);
+  const [pagina, setPagina] = useState(0);
+  const [hayMas, setHayMas] = useState(false);
   const [sel, setSel] = useState<Seleccion>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // El maestro tiene >24k productos: sin filtros la barra de búsqueda sola no basta.
+  useEffect(() => {
+    api
+      .get<CatalogoFacetas>("/catalogo/facetas")
+      .then(setFacetas)
+      .catch(() => setFacetas(null));
+  }, []);
+
+  // Cambiar de búsqueda o de filtro reinicia la paginación.
+  useEffect(() => {
+    setPagina(0);
+  }, [q, forma, laboratorio, tipo]);
+
   useEffect(() => {
     let active = true;
     const t = setTimeout(async () => {
+      const params = new URLSearchParams({
+        limit: String(PAGINA),
+        offset: String(pagina * PAGINA),
+      });
+      if (q) params.set("q", q);
+      if (forma) params.set("forma_farmaceutica", forma);
+      if (laboratorio) params.set("laboratorio", laboratorio);
+      if (tipo) params.set("tipo", tipo);
       try {
-        const data = await api.get<ProductoMaestro[]>(`/catalogo/?q=${encodeURIComponent(q)}`);
-        if (active) setResultados(data);
+        const data = await api.get<ProductoMaestro[]>(`/catalogo/?${params}`);
+        if (!active) return;
+        // Una página llena sugiere que hay más; el backend no devuelve el total.
+        setHayMas(data.length === PAGINA);
+        setResultados((prev) => (pagina === 0 || !prev ? data : [...prev, ...data]));
       } catch {
         if (active) setResultados([]);
       }
@@ -34,7 +66,15 @@ export default function AgregarPage() {
       active = false;
       clearTimeout(t);
     };
-  }, [q]);
+  }, [q, forma, laboratorio, tipo, pagina]);
+
+  const filtrosActivos = [forma, laboratorio, tipo].filter(Boolean).length;
+
+  function limpiarFiltros() {
+    setForma("");
+    setLaboratorio("");
+    setTipo("");
+  }
 
   function toggle(p: ProductoMaestro) {
     setSel((prev) => {
@@ -83,10 +123,62 @@ export default function AgregarPage() {
         <SearchBar
           value={q}
           onChange={setQ}
-          placeholder="Buscar por nombre o principio activo…"
+          placeholder="Marca, principio activo o laboratorio…"
           className="mb-2"
           autoFocus
         />
+
+        {/* Filtros: con miles de medicamentos el proveedor piensa por forma
+            farmacéutica, laboratorio y marca/genérico, no solo por nombre. */}
+        {facetas && (
+          <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
+            <select
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value)}
+              className="input h-9 w-auto flex-none py-0 text-[13px]"
+            >
+              <option value="">Marca y genérico</option>
+              {facetas.tipos.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+            <select
+              value={forma}
+              onChange={(e) => setForma(e.target.value)}
+              className="input h-9 w-auto flex-none py-0 text-[13px]"
+            >
+              <option value="">Toda forma</option>
+              {facetas.formas_farmaceuticas.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+            <select
+              value={laboratorio}
+              onChange={(e) => setLaboratorio(e.target.value)}
+              className="input h-9 w-auto flex-none py-0 text-[13px]"
+            >
+              <option value="">Todo laboratorio</option>
+              {facetas.laboratorios.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+            {filtrosActivos > 0 && (
+              <button
+                onClick={limpiarFiltros}
+                className="h-9 flex-none rounded-lg px-3 text-[13px] font-semibold text-primary"
+              >
+                Limpiar ({filtrosActivos})
+              </button>
+            )}
+          </div>
+        )}
+
         <p className="mb-2 px-1 text-[12px] text-muted">
           Marca lo que vas a ofertar y define <b>precio y stock</b>.
         </p>
@@ -167,6 +259,13 @@ export default function AgregarPage() {
                   <span className="mt-0.5 h-6 w-6 flex-none rounded-md border-2 border-slate-300" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[14.5px] font-semibold leading-tight">{p.nombre}</p>
+                    {/* El principio activo distingue marcas homónimas: con el maestro
+                        real hay decenas de "Funzal"-como-marca por molécula. */}
+                    {p.principio_activo && (
+                      <p className="mt-0.5 text-[12px] font-medium text-slate-600">
+                        {[p.principio_activo, p.concentracion].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
                     <p className="mt-0.5 text-[12px] text-muted">
                       {[presentacion, p.laboratorio].filter(Boolean).join(" · ")}
                     </p>
@@ -174,6 +273,15 @@ export default function AgregarPage() {
                 </button>
               );
             })}
+
+            {hayMas && (
+              <button
+                onClick={() => setPagina((n) => n + 1)}
+                className="card-flat w-full py-3 text-center text-[13px] font-semibold text-primary"
+              >
+                Ver más resultados
+              </button>
+            )}
           </div>
         )}
       </div>
