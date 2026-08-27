@@ -70,6 +70,24 @@ def test_catalogo_excluye_ofertados(client, headers_proveedor1):
     assert "Ibuprofeno 400mg" not in nombres
 
 
+def test_catalogo_no_filtra_precios_de_competencia(client, headers_proveedor2):
+    """Regresión de la fuga competitiva (2026-08-27): el catálogo maestro que ve
+    un proveedor NUNCA debe traer precios derivados de ofertas de otras
+    organizaciones (`precio_min_mercado` ni ningún campo de precio). El
+    proveedor fija su precio con total libertad, sin ver a la competencia."""
+    r = client.get(
+        "/v1/catalogo/",
+        params={"q": "ibupro", "incluir_ofertados": "true"},
+        headers=headers_proveedor2,
+    )
+    assert r.status_code == 200
+    productos = r.json()["data"]
+    assert productos, "la búsqueda debe traer resultados para que el test valide algo"
+    for p in productos:
+        assert "precio_min_mercado" not in p
+        assert not any("precio" in campo for campo in p), f"campo de precio filtrado: {p}"
+
+
 def test_dashboard_proveedor(client, headers_proveedor1):
     r = client.get("/v1/dashboard/", headers=headers_proveedor1)
     assert r.status_code == 200

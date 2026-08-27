@@ -1,13 +1,12 @@
 "use client";
 
-import { ArrowRight, Boxes, Check, Tag } from "lucide-react";
+import { ArrowRight, Boxes, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { BackBar } from "@/components/shell";
 import { Button, SearchBar, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
-import { cop } from "@/lib/format";
 import type { CatalogoFacetas, ProductoMaestro } from "@/lib/types";
 
 type Seleccion = Record<string, { precio: string; stock: string }>;
@@ -82,10 +81,9 @@ export default function AgregarPage() {
       if (next[p.id]) {
         delete next[p.id];
       } else {
-        next[p.id] = {
-          precio: p.precio_min_mercado ? String(p.precio_min_mercado) : "",
-          stock: "",
-        };
+        // Precio siempre vacío: el proveedor lo fija con total libertad, sin
+        // ver ni heredar precios de la competencia (decisión del fundador).
+        next[p.id] = { precio: "", stock: "" };
       }
       return next;
     });
@@ -210,11 +208,6 @@ export default function AgregarPage() {
                         <p className="mt-0.5 text-[12px] text-muted">
                           {[presentacion, p.laboratorio].filter(Boolean).join(" · ")}
                         </p>
-                        {p.precio_min_mercado != null && (
-                          <div className="mt-2 flex w-fit items-center gap-1.5 rounded-lg bg-teal-50 px-2 py-1 text-[12px] text-teal-700">
-                            <Tag size={13} /> Más bajo del mercado: <b>{cop(p.precio_min_mercado)}</b>
-                          </div>
-                        )}
                       </div>
                     </button>
                     <div className="mt-3 space-y-3 border-t border-primary-100 pt-3">

@@ -17,7 +17,6 @@ export type ProductoMaestro = {
   tipo?: string | null;
   via_administracion?: string | null;
   condicion_venta?: string | null;
-  precio_min_mercado?: number | null;
 };
 
 /** Valores disponibles para los filtros del catálogo maestro. */

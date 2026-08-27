@@ -15,9 +15,9 @@ class ProductoMaestro(BaseModel):
     via_administracion: str | None = None
     # Venta libre / con fórmula médica / margen terapéutico estrecho.
     condicion_venta: str | None = None
-    # Precio más bajo del mercado para este producto (ofertas activas de cualquier
-    # proveedor). Guía al proveedor al fijar su precio (p3). None si nadie lo oferta.
-    precio_min_mercado: float | None = None
+    # NOTA: este schema se sirve a proveedores. Nunca agregar aquí datos de
+    # ofertas de otras organizaciones (p. ej. precio mínimo de mercado):
+    # sería una fuga competitiva y un ancla de precios entre proveedores.
 
 
 class CatalogoFacetas(BaseModel):

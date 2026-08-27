@@ -33,8 +33,12 @@ def buscar_catalogo(
     ] = False,
 ) -> ApiResponse[list[ProductoMaestro]]:
     """Catálogo maestro para agregar ofertas (p3): productos que el proveedor
-    aún NO oferta, con el precio más bajo del mercado como referencia.
-    Con `incluir_ofertados=true` devuelve todo el maestro (usado por la carga masiva)."""
+    aún NO oferta. Con `incluir_ofertados=true` devuelve todo el maestro
+    (usado por la carga masiva).
+
+    Deliberadamente NO expone ningún dato de ofertas de otras organizaciones
+    (precios, mínimos de mercado, etc.): cada proveedor fija su precio sin ver
+    a la competencia — es la base de la comparación honesta del marketplace."""
     ya_ids: set[str] = set()
     if not incluir_ofertados:
         # Productos que este proveedor ya oferta (para no ofrecérselos de nuevo).
@@ -65,29 +69,7 @@ def buscar_catalogo(
         ).execute()
     ).data or []
 
-    # Precio mínimo de mercado por producto (ofertas activas de cualquier proveedor).
-    ids = [p["id"] for p in productos]
-    min_mercado: dict[str, float] = {}
-    if ids:
-        ofertas = (
-            db.table("ofertas")
-            .select("producto_maestro_id, precio")
-            .in_("producto_maestro_id", ids)
-            .eq("activo", True)
-            .execute()
-        ).data or []
-        for o in ofertas:
-            pid = o["producto_maestro_id"]
-            precio = float(o["precio"])
-            if pid not in min_mercado or precio < min_mercado[pid]:
-                min_mercado[pid] = precio
-
-    return ApiResponse(
-        data=[
-            ProductoMaestro(**p, precio_min_mercado=min_mercado.get(p["id"]))
-            for p in productos
-        ]
-    )
+    return ApiResponse(data=[ProductoMaestro(**p) for p in productos])
 
 
 @router.get("/facetas")
