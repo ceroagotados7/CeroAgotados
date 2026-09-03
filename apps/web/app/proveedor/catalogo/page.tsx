@@ -4,10 +4,11 @@ import { AlertTriangle, Package, PauseCircle, Pencil, Pill, Plus, SlidersHorizon
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { InputMiles } from "@/components/input-miles";
 import { AppBar } from "@/components/shell";
-import { Badge, Button, Card, Chip, EmptyState, IconButton, Input, SearchBar, Spinner, Toggle } from "@/components/ui";
+import { Badge, Button, Card, Chip, EmptyState, IconButton, SearchBar, Spinner, Toggle } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
-import { cop } from "@/lib/format";
+import { cop, miles } from "@/lib/format";
 import { useMe } from "@/lib/me";
 import type { Oferta } from "@/lib/types";
 
@@ -189,8 +190,11 @@ function OfertaCard({ oferta, onReload }: { oferta: Oferta; onReload: () => Prom
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[14.5px] font-semibold leading-tight">{oferta.producto?.nombre ?? "Producto"}</p>
+          {/* Laboratorio incluido (auditoría del fundador): identifica el producto exacto. */}
           <p className="mt-0.5 text-[12px] text-muted">
-            {[oferta.producto?.forma_farmaceutica, oferta.producto?.presentacion].filter(Boolean).join(" · ")}
+            {[oferta.producto?.forma_farmaceutica, oferta.producto?.presentacion, oferta.producto?.laboratorio]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
         {/* El estado ya no se cambia aquí (era un toggle): se muestra como badge y se edita en "Editar". */}
@@ -221,7 +225,7 @@ function OfertaCard({ oferta, onReload }: { oferta: Oferta; onReload: () => Prom
               agotado ? "text-danger" : bajo ? "text-amber-600" : ""
             }`}
           >
-            {oferta.stock_disponible}
+            {miles(oferta.stock_disponible)}
             {bajo && <AlertTriangle size={13} />}
             {!agotado && !bajo && <span className="text-[10.5px] font-medium text-muted">cajas</span>}
           </p>
@@ -249,8 +253,10 @@ function EditCard({
   onDone: () => void;
   onCancel: () => void;
 }) {
-  const [precio, setPrecio] = useState(String(oferta.precio));
-  const [stock, setStock] = useState(String(oferta.stock_disponible));
+  // InputMiles trabaja con dígitos: redondear evita que un decimal residual
+  // ("24000.5") pierda el punto y se lea como 240005.
+  const [precio, setPrecio] = useState(String(Math.round(oferta.precio)));
+  const [stock, setStock] = useState(String(Math.round(oferta.stock_disponible)));
   const [activo, setActivo] = useState(oferta.activo);
   const [saving, setSaving] = useState(false);
   const [confirmar, setConfirmar] = useState(false);
@@ -295,18 +301,21 @@ function EditCard({
 
   return (
     <Card className="p-3.5">
-      <p className="mb-3 text-[14.5px] font-semibold leading-tight">{oferta.producto?.nombre ?? "Producto"}</p>
-      <div className="grid grid-cols-2 gap-2">
+      <p className="text-[14.5px] font-semibold leading-tight">{oferta.producto?.nombre ?? "Producto"}</p>
+      {oferta.producto?.laboratorio && (
+        <p className="mt-0.5 text-[12px] text-muted">{oferta.producto.laboratorio}</p>
+      )}
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <div>
           <label className="label">Precio (caja)</label>
           <div className="relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-semibold text-muted">$</span>
-            <Input type="number" value={precio} onChange={(e) => setPrecio(e.target.value)} className="pl-8 font-semibold" />
+            <InputMiles value={precio} onChange={setPrecio} className="input pl-8 font-semibold" />
           </div>
         </div>
         <div>
           <label className="label">Stock (cajas)</label>
-          <Input type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="font-semibold" />
+          <InputMiles value={stock} onChange={setStock} className="input font-semibold" />
         </div>
       </div>
 

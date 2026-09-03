@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppBar, refrescarBadge } from "@/components/shell";
 import { Avatar, Badge, Card, Chip, EmptyState, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace } from "@/lib/format";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, miles } from "@/lib/format";
 import type { PedidoFarmacia } from "@/lib/types";
 
 type Filtro = "activos" | "entregados" | "todos";
@@ -101,7 +101,7 @@ export default function MisPedidosPage() {
                     </div>
                     <div className="mt-2.5 flex items-center justify-between border-t border-line pt-2.5">
                       <p className="text-[12.5px] text-muted">
-                        {nItems} producto{nItems !== 1 && "s"} · {cajas} cajas
+                        {nItems} producto{nItems !== 1 && "s"} · {miles(cajas)} cajas
                       </p>
                       <p className="font-display text-[15px] font-bold">
                         {cop(p.total > 0 ? p.total : p.total_solicitado)}

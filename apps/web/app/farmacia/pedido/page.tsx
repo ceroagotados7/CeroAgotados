@@ -6,9 +6,10 @@ import { useMemo, useState } from "react";
 
 import { AppBar } from "@/components/shell";
 import { Avatar, Button, Card, EmptyState } from "@/components/ui";
+import { InputMiles } from "@/components/input-miles";
 import { api, ApiCallError } from "@/lib/api";
 import { cartTotal, clearCart, removeFromCart, setCantidad, useCart, type CartItem } from "@/lib/cart";
-import { cop } from "@/lib/format";
+import { cop, miles } from "@/lib/format";
 import { useMe } from "@/lib/me";
 import type { PedidoCreadoResult } from "@/lib/types";
 
@@ -135,17 +136,20 @@ export default function PedidoPage() {
                       <div key={i.oferta_id} className="flex items-center gap-2.5 py-2.5">
                         <div className="min-w-0 flex-1">
                           <p className="text-[13.5px] font-semibold leading-tight">{i.nombre}</p>
+                          {/* Presentación y laboratorio identifican el producto exacto. */}
+                          {(i.presentacion || i.laboratorio) && (
+                            <p className="mt-0.5 truncate text-[11.5px] text-muted">
+                              {[i.presentacion, i.laboratorio].filter(Boolean).join(" · ")}
+                            </p>
+                          )}
                           <p className="mt-0.5 text-[12px] text-muted">
-                            {cop(i.precio)} / caja · stock {i.stock}
+                            {cop(i.precio)} / caja · stock {miles(i.stock)}
                           </p>
                         </div>
-                        <input
-                          type="number"
-                          min={1}
-                          max={i.stock}
-                          value={i.cantidad}
-                          onChange={(e) =>
-                            setCantidad(i.oferta_id, Math.max(1, Math.min(Number(e.target.value), i.stock)))
+                        <InputMiles
+                          value={i.cantidad > 0 ? String(i.cantidad) : ""}
+                          onChange={(d) =>
+                            setCantidad(i.oferta_id, Math.max(1, Math.min(Number(d || 1), i.stock)))
                           }
                           className="input w-[74px] flex-none py-2 text-center font-semibold"
                           aria-label={`Cantidad de ${i.nombre}`}

@@ -8,7 +8,7 @@ import { OrdenImprimible } from "@/components/orden-imprimible";
 import { AppBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, CardFlat, Chip, EmptyState, IconButton, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales } from "@/lib/format";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
 import type { ItemDecision, Orden } from "@/lib/types";
 
 type Filtro = "pendientes" | "preparacion" | "despachadas" | "todas";
@@ -179,11 +179,14 @@ function OrdenPendiente({
       <div className="divider mb-3" />
       <div className="mb-3 space-y-2">
         {orden.items.map((it) => (
-          <div key={it.id} className="flex items-center justify-between text-[13.5px]">
-            <span className="text-soft">
-              {it.producto?.nombre ?? "Producto"} <span className="text-muted">× {it.cantidad_solicitada} cajas</span>
+          <div key={it.id} className="flex items-center justify-between gap-2 text-[13.5px]">
+            <span className="min-w-0 text-soft">
+              {it.producto?.nombre ?? "Producto"}{" "}
+              {/* Laboratorio incluido (auditoría del fundador). */}
+              {it.producto?.laboratorio && <span className="text-muted">· {it.producto.laboratorio}</span>}{" "}
+              <span className="text-muted">× {miles(it.cantidad_solicitada)} cajas</span>
             </span>
-            <span className="font-semibold">{cop(it.cantidad_solicitada * it.precio_unitario_snapshot)}</span>
+            <span className="flex-none font-semibold">{cop(it.cantidad_solicitada * it.precio_unitario_snapshot)}</span>
           </div>
         ))}
       </div>
@@ -252,7 +255,7 @@ function CompactOrden({ orden, index }: { orden: Orden; index: number }) {
         </div>
         <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
           <span className="text-[12.5px] text-muted">
-            {orden.items.length} productos · {cajas} cajas
+            {orden.items.length} productos · {miles(cajas)} cajas
           </span>
           <span className="font-display text-[15px] font-bold">{cop(totalMostrar)}</span>
         </div>

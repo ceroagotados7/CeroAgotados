@@ -15,7 +15,7 @@ import { BannerVerificacion } from "@/components/banner-verificacion";
 import { AppBar } from "@/components/shell";
 import { Avatar, Badge, Card, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, iniciales, mesActual, mesAnterior } from "@/lib/format";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, iniciales, mesActual, mesAnterior, miles } from "@/lib/format";
 import type { ProveedorDashboard } from "@/lib/types";
 
 const AVATAR_BG = ["bg-teal-600", "bg-primary-700", "bg-slate-500"];
@@ -100,7 +100,7 @@ export default function DashboardPage() {
             <span className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
               <Pill size={18} />
             </span>
-            <p className="font-display text-[22px] font-extrabold leading-none">{data.medicamentos_activos}</p>
+            <p className="font-display text-[22px] font-extrabold leading-none">{miles(data.medicamentos_activos)}</p>
             <p className="mt-1 text-[12.5px] text-muted">Medicamentos activos</p>
           </Card>
         </div>

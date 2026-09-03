@@ -6,7 +6,7 @@ import { use, useEffect, useState } from "react";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Card, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
-import { cop, iniciales } from "@/lib/format";
+import { cop, iniciales, miles } from "@/lib/format";
 import type { AdminProveedorDetalle } from "@/lib/types";
 
 export default function ProveedorDetalleAdmin({ params }: { params: Promise<{ id: string }> }) {
@@ -44,7 +44,7 @@ export default function ProveedorDetalleAdmin({ params }: { params: Promise<{ id
                 </Badge>
               )}
               <span className="flex items-center gap-1">
-                <Pill size={12} /> {data.medicamentos} medicamentos
+                <Pill size={12} /> {miles(data.medicamentos)} medicamentos
               </span>
             </div>
           </div>

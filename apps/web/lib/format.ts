@@ -7,6 +7,24 @@ export function cop(value: number): string {
   }).format(value);
 }
 
+/** Entero con separador de miles es-CO: 24149 → "24.149". */
+export function miles(value: number): string {
+  if (!Number.isFinite(value)) return "0";
+  return new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(value);
+}
+
+/** Deja solo los dígitos de un texto: "1.250.000" / "$1,250,000" → "1250000". */
+export function soloDigitos(s: string): string {
+  return s.replace(/\D+/g, "");
+}
+
+/** Valor de un input numérico mientras se escribe: dígitos → "1.250.000" ("" si no hay). */
+export function milesInput(s: string): string {
+  const digits = soloDigitos(s);
+  if (!digits) return "";
+  return miles(Number(digits));
+}
+
 export const ESTADO_ORDEN_LABEL: Record<string, string> = {
   pendiente: "Pendiente",
   aceptada_parcial: "Aceptada parcial",

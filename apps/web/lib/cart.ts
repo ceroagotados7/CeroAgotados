@@ -11,6 +11,8 @@ export type CartItem = {
   producto_id: string;
   nombre: string;
   presentacion: string;
+  /** Opcional: los carritos guardados antes de agregarlo no lo traen. */
+  laboratorio?: string | null;
   proveedor_alias: string;
   precio: number;
   stock: number;

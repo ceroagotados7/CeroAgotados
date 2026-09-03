@@ -8,7 +8,8 @@ import { OrdenTimeline } from "@/components/orden-timeline";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, IconButton, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales } from "@/lib/format";
+import { InputMiles } from "@/components/input-miles";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
 import type { ItemDecision, Oferta, Orden, OrdenItem } from "@/lib/types";
 
 export default function OrdenDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -350,9 +351,16 @@ function ItemEditable({
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold leading-tight">{item.producto?.nombre ?? "Producto"}</p>
+          {/* Laboratorio incluido (auditoría del fundador): en bodega distingue
+              el producto exacto entre marcas homónimas. */}
+          {(item.producto?.presentacion || item.producto?.laboratorio) && (
+            <p className="mt-0.5 truncate text-[11.5px] text-muted">
+              {[item.producto?.presentacion, item.producto?.laboratorio].filter(Boolean).join(" · ")}
+            </p>
+          )}
           <p className={`mt-0.5 text-[12px] ${disponible ? "text-muted" : "text-danger/90"}`}>
-            Pide {item.cantidad_solicitada} cajas × {cop(item.precio_unitario_snapshot)} · stock restante:{" "}
-            <b className={disponible ? "text-primary-700" : ""}>{stock}</b>
+            Pide {miles(item.cantidad_solicitada)} cajas × {cop(item.precio_unitario_snapshot)} · stock restante:{" "}
+            <b className={disponible ? "text-primary-700" : ""}>{miles(stock)}</b>
           </p>
         </div>
         <p className={`font-display text-[14px] font-bold ${disponible ? "" : "text-muted line-through"}`}>
@@ -365,7 +373,7 @@ function ItemEditable({
           onClick={() => onChange(maximo)}
           className={`chip flex-1 justify-center ${disponible && !parcial ? "chip-active" : ""}`}
         >
-          <Check size={14} /> Todo ({maximo})
+          <Check size={14} /> Todo ({miles(maximo)})
         </button>
         <button
           onClick={() => onChange(Math.max(1, Math.min(cantidad || maximo, maximo - 1)))}
@@ -396,13 +404,10 @@ function ItemEditable({
             >
               <Minus size={14} />
             </button>
-            <input
+            <InputMiles
               id={`cant-${item.id}`}
-              type="number"
-              min={1}
-              max={maximo}
-              value={cantidad}
-              onChange={(e) => onChange(Math.max(1, Math.min(Number(e.target.value) || 1, maximo)))}
+              value={String(cantidad)}
+              onChange={(d) => onChange(Math.max(1, Math.min(Number(d || 1), maximo)))}
               className="input w-[64px] flex-none py-2 text-center font-semibold"
               aria-label={`Cajas a despachar de ${item.producto?.nombre ?? "producto"}`}
             />
@@ -417,7 +422,7 @@ function ItemEditable({
             </button>
           </div>
           <span className={`min-w-0 text-[12px] ${parcial ? "font-semibold text-amber-600" : "text-muted"}`}>
-            de {item.cantidad_solicitada}{parcial && " · parcial"}
+            de {miles(item.cantidad_solicitada)}{parcial && " · parcial"}
           </span>
         </div>
       )}
@@ -449,8 +454,11 @@ function ResumenLectura({ orden }: { orden: Orden }) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-[14px] font-semibold leading-tight">{it.producto?.nombre ?? "Producto"}</p>
+                {it.producto?.laboratorio && (
+                  <p className="mt-0.5 truncate text-[11.5px] text-muted">{it.producto.laboratorio}</p>
+                )}
                 <p className="mt-0.5 text-[12px] text-muted">
-                  {aceptado ? `${it.cantidad_aceptada} cajas` : "No despachado"} × {cop(it.precio_unitario_snapshot)}
+                  {aceptado ? `${miles(it.cantidad_aceptada)} cajas` : "No despachado"} × {cop(it.precio_unitario_snapshot)}
                 </p>
               </div>
               <Badge tone={it.estado_item === "rechazado" ? "red" : aceptado ? "green" : "gray"}>

@@ -8,7 +8,7 @@ import { BackBar } from "@/components/shell";
 import { Badge, Bar, Button, Card, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { descargarErrores, descargarPlantilla, normNombre, parseArchivo, type FilaCruda } from "@/lib/bulk";
-import { cop } from "@/lib/format";
+import { cop, miles } from "@/lib/format";
 import { useMe } from "@/lib/me";
 import type { Oferta, ProductoMaestro } from "@/lib/types";
 
@@ -211,7 +211,9 @@ export default function CargaMasivaPage() {
                       {f.estado === "error" ? `Fila ${f.fila} · ${f.nombre || "sin nombre"}` : f.nombre}
                     </p>
                     <p className={`text-[11.5px] ${f.estado === "error" ? "text-danger/80" : "text-muted"}`}>
-                      {f.estado === "error" ? f.error : `${cop(f.precioNum)} · stock ${f.stock || 0}`}
+                      {f.estado === "error"
+                        ? f.error
+                        : `${cop(f.precioNum)} · stock ${miles(Number(String(f.stock).replace(/[^0-9]/g, "")) || 0)}`}
                     </p>
                   </div>
                   <Badge tone={f.estado === "error" ? "red" : f.estado === "nuevo" ? "green" : "teal"} className="flex-none">

@@ -4,6 +4,7 @@ import { ArrowRight, Boxes, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { InputMiles } from "@/components/input-miles";
 import { BackBar } from "@/components/shell";
 import { Button, SearchBar, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
@@ -216,10 +217,9 @@ export default function AgregarPage() {
                           <label className="label">Precio (caja)</label>
                           <div className="relative">
                             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-semibold text-muted">$</span>
-                            <input
-                              type="number"
+                            <InputMiles
                               value={elegido.precio}
-                              onChange={(e) => setCampo(p.id, "precio", e.target.value)}
+                              onChange={(v) => setCampo(p.id, "precio", v)}
                               className="input pl-8 font-semibold"
                               placeholder="0"
                             />
@@ -229,10 +229,9 @@ export default function AgregarPage() {
                           <label className="label">Stock (cajas)</label>
                           <div className="relative">
                             <Boxes size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                            <input
-                              type="number"
+                            <InputMiles
                               value={elegido.stock}
-                              onChange={(e) => setCampo(p.id, "stock", e.target.value)}
+                              onChange={(v) => setCampo(p.id, "stock", v)}
                               className="input pl-9 font-semibold"
                               placeholder="0"
                             />

@@ -25,7 +25,9 @@ export default function RegistroPage() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [tipo, setTipo] = useState<Tipo>("proveedor");
+  // SIN preselección (feedback del fundador): elegir mal el rol crea perfiles
+  // erróneos, así que la persona debe escoger proveedor o farmacia a propósito.
+  const [tipo, setTipo] = useState<Tipo | null>(null);
   const [razonSocial, setRazonSocial] = useState("");
   const [nit, setNit] = useState("");
   const [ciudad, setCiudad] = useState("");
@@ -40,6 +42,10 @@ export default function RegistroPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!tipo) {
+      setError("Elige si tu empresa es proveedor o farmacia.");
+      return;
+    }
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
       return;
@@ -89,12 +95,18 @@ export default function RegistroPage() {
           <span className="font-display text-2xl font-extrabold tracking-tight">Cero Agotados</span>
         </div>
         <h1 className="relative mt-6 font-display text-[24px] font-extrabold leading-tight">
-          {tipo === "farmacia" ? "Crea tu cuenta de farmacia" : "Crea tu cuenta de proveedor"}
+          {tipo === "farmacia"
+            ? "Crea tu cuenta de farmacia"
+            : tipo === "proveedor"
+              ? "Crea tu cuenta de proveedor"
+              : "Crea tu cuenta"}
         </h1>
         <p className="relative mt-1.5 max-w-[280px] text-[13.5px] text-white/85">
           {tipo === "farmacia"
             ? "Registra tu farmacia y compra siempre al mejor precio."
-            : "Registra tu laboratorio o distribuidora y empieza a ofertar al mejor precio."}
+            : tipo === "proveedor"
+              ? "Registra tu laboratorio o distribuidora y empieza a ofertar al mejor precio."
+              : "Primero cuéntanos qué es tu empresa: ¿proveedor o farmacia?"}
         </p>
       </div>
 
@@ -211,9 +223,10 @@ export default function RegistroPage() {
 
           <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
             Tu cuenta quedará <b>en revisión</b> del equipo de Cero Agotados.{" "}
-            {tipo === "proveedor"
-              ? "Podrás armar tu catálogo de inmediato; será visible para las farmacias cuando te aprobemos."
-              : "Podrás explorar los precios de inmediato; podrás hacer pedidos cuando te aprobemos."}
+            {tipo === "proveedor" &&
+              "Podrás armar tu catálogo de inmediato; será visible para las farmacias cuando te aprobemos."}
+            {tipo === "farmacia" &&
+              "Podrás explorar los precios de inmediato; podrás hacer pedidos cuando te aprobemos."}
           </p>
 
           <Button type="submit" size="lg" block disabled={loading}>

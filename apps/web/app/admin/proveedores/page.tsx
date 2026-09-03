@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 import { AppBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, Chip, EmptyState, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
-import { hace, iniciales } from "@/lib/format";
+import { hace, iniciales, miles } from "@/lib/format";
 import type {
   AdminDocumento,
   AdminDocumentosResult,
@@ -189,7 +189,7 @@ function OrgCard({
   const [error, setError] = useState<string | null>(null);
   const estado = org.estado_verificacion;
   const actividad =
-    "medicamentos" in org ? `${org.medicamentos} medicamentos` : `${org.pedidos} pedidos`;
+    "medicamentos" in org ? `${miles(org.medicamentos)} medicamentos` : `${miles(org.pedidos)} pedidos`;
 
   async function decidir(accion: EstadoVerificacion, conMotivo?: string) {
     setAccionando(true);

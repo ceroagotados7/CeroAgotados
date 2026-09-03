@@ -4,11 +4,12 @@ import { Boxes, Check, ShoppingCart, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useState } from "react";
 
+import { InputMiles } from "@/components/input-miles";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, EmptyState, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
 import { addToCart, useCart } from "@/lib/cart";
-import { cop } from "@/lib/format";
+import { cop, miles } from "@/lib/format";
 import type { CompararResult } from "@/lib/types";
 
 export default function CompararPage({ params }: { params: Promise<{ id: string }> }) {
@@ -48,6 +49,8 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
   const presentacion = [data.producto.forma_farmaceutica, data.producto.presentacion]
     .filter(Boolean)
     .join(" · ");
+  // El laboratorio identifica el producto exacto (auditoría del fundador).
+  const detalleProducto = [presentacion, data.producto.laboratorio].filter(Boolean).join(" · ");
   const enCarrito = new Set(cart.map((i) => i.oferta_id));
 
   function toggle(ofertaId: string, stock: number) {
@@ -57,7 +60,9 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
         delete resto[ofertaId];
         return resto;
       }
-      return { ...s, [ofertaId]: Math.min(10, stock) };
+      // Prellenar 1 caja (feedback del fundador: sugerir 10 era incorrecto;
+      // el farmacéutico decide si aumenta).
+      return { ...s, [ofertaId]: Math.min(1, stock) };
     });
   }
 
@@ -72,6 +77,7 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
         proveedor_alias: o.proveedor_alias,
         precio: o.precio,
         stock: o.stock_disponible,
+        laboratorio: data.producto.laboratorio ?? null,
         cantidad: Math.min(sel[o.oferta_id] ?? 1, o.stock_disponible),
       });
     }
@@ -83,7 +89,7 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
       <BackBar title={data.producto.nombre} subtitle="Comprar al mejor precio" backHref="/farmacia" />
 
       <div className="px-5 pb-44">
-        {presentacion && <p className="mb-3 px-1 text-[12.5px] text-muted">{presentacion}</p>}
+        {detalleProducto && <p className="mb-3 px-1 text-[12.5px] text-muted">{detalleProducto}</p>}
 
         {/* Stats (f2): opciones · más bajo · promedio. Sin identidad de proveedor. */}
         {data.opciones_total > 0 && (
@@ -142,7 +148,7 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
                         {yaEnPedido && <Badge tone="teal">En tu pedido</Badge>}
                       </div>
                       <p className="mt-0.5 flex items-center gap-1 text-[12px] text-muted">
-                        <Boxes size={12} /> stock {o.stock_disponible} cajas
+                        <Boxes size={12} /> stock {miles(o.stock_disponible)} cajas
                       </p>
                     </div>
                     <div className="flex-none text-right">
@@ -162,14 +168,11 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
                         Cantidad (cajas)
                       </label>
                       <div className="mb-2 flex items-center gap-2">
-                        <input
+                        <InputMiles
                           id={`cant-${o.oferta_id}`}
-                          type="number"
-                          min={1}
-                          max={o.stock_disponible}
-                          value={cantidad}
-                          onChange={(e) =>
-                            setSel((s) => ({ ...s, [o.oferta_id]: Number(e.target.value) }))
+                          value={cantidad > 0 ? String(cantidad) : ""}
+                          onChange={(d) =>
+                            setSel((s) => ({ ...s, [o.oferta_id]: Number(d || 0) }))
                           }
                           className="input flex-1 font-semibold"
                         />
@@ -191,7 +194,7 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
                       </div>
                       <div className="flex items-center justify-between text-[13px]">
                         <span className="text-muted">
-                          {cantidad} caja{cantidad !== 1 && "s"} × {cop(o.precio)}
+                          {miles(cantidad)} caja{cantidad !== 1 && "s"} × {cop(o.precio)}
                         </span>
                         <span className="font-display text-[15px] font-bold text-primary-800">
                           {cop(o.precio * cantidad)}
@@ -199,7 +202,7 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
                       </div>
                       {cantidad > o.stock_disponible && (
                         <p className="mt-1.5 text-[12px] text-danger">
-                          Máximo {o.stock_disponible} cajas disponibles.
+                          Máximo {miles(o.stock_disponible)} cajas disponibles.
                         </p>
                       )}
                     </div>

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { AppBar } from "@/components/shell";
 import { Card, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
-import { cop } from "@/lib/format";
+import { cop, miles } from "@/lib/format";
 import type { AdminGanancias } from "@/lib/types";
 
 export default function GananciasPage() {
@@ -74,7 +74,7 @@ export default function GananciasPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13.5px] font-semibold">{m.nombre}</p>
                   <p className="text-[11.5px] text-muted">
-                    GMV {cop(m.gmv)} · {m.cajas} cajas
+                    GMV {cop(m.gmv)} · {miles(m.cajas)} cajas
                   </p>
                 </div>
                 <p className="font-display text-[14px] font-bold text-primary-800">+{cop(m.comision)}</p>

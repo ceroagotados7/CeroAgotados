@@ -8,7 +8,7 @@ import { OrdenTimeline } from "@/components/orden-timeline";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace } from "@/lib/format";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, miles } from "@/lib/format";
 import type { PedidoFarmacia } from "@/lib/types";
 
 const ESTADO_ITEM_LABEL: Record<string, string> = {
@@ -130,8 +130,14 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                     <p className={`text-[13.5px] font-semibold leading-tight ${rechazado ? "text-muted line-through" : ""}`}>
                       {i.producto?.nombre ?? "Producto"}
                     </p>
+                    {/* Laboratorio incluido (auditoría del fundador). */}
+                    {(i.producto?.presentacion || i.producto?.laboratorio) && (
+                      <p className="mt-0.5 truncate text-[11.5px] text-muted">
+                        {[i.producto?.presentacion, i.producto?.laboratorio].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
                     <p className="mt-0.5 text-[12px] text-muted">
-                      {cantidad} caja{cantidad !== 1 && "s"} × {cop(i.precio_unitario_snapshot)}
+                      {miles(cantidad)} caja{cantidad !== 1 && "s"} × {cop(i.precio_unitario_snapshot)}
                       {gestionado && i.estado_item === "aceptado" && i.cantidad_aceptada < i.cantidad_solicitada && (
                         <span className="text-amber-600"> · de {i.cantidad_solicitada} pedidas</span>
                       )}

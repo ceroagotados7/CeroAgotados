@@ -1,6 +1,6 @@
 "use client";
 
-import { cop, fechaHora } from "@/lib/format";
+import { cop, fechaHora, miles } from "@/lib/format";
 import type { Orden } from "@/lib/types";
 
 /** Hoja imprimible del pedido: para llevar a bodega y verificar antes de
@@ -47,6 +47,9 @@ export function OrdenImprimible({ orden }: { orden: Orden }) {
             <th style={{ width: 30 }}>OK</th>
             <th>Producto</th>
             <th>Presentación</th>
+            {/* El laboratorio identifica el producto exacto en bodega
+                (feedback del fundador: no aparecía en el imprimible). */}
+            <th>Laboratorio</th>
             <th style={{ width: 90 }}>Cajas pedidas</th>
             <th style={{ width: 110 }}>Cajas en bodega</th>
           </tr>
@@ -59,7 +62,8 @@ export function OrdenImprimible({ orden }: { orden: Orden }) {
               <td>
                 {[i.producto?.forma_farmaceutica, i.producto?.presentacion].filter(Boolean).join(" · ") || "—"}
               </td>
-              <td>{i.cantidad_solicitada}</td>
+              <td>{i.producto?.laboratorio ?? "—"}</td>
+              <td>{miles(i.cantidad_solicitada)}</td>
               <td />
             </tr>
           ))}
