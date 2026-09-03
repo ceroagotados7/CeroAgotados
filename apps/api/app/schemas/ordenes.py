@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.catalogo import ProductoMaestro
 
@@ -39,6 +39,10 @@ class Orden(BaseModel):
     estado: str
     total: float
     created_at: str
+    # Factura de venta del despacho (trazabilidad punto a punto). Null en
+    # órdenes aún no despachadas o anteriores a la migración 21.
+    factura_numero: str | None = None
+    factura_registrada_at: str | None = None
     farmacia: OrgRef | None = None
     items: list[OrdenItem] = []
     eventos: list[OrdenEvento] = []
@@ -56,3 +60,19 @@ class ItemDecision(BaseModel):
 
 class AceptarOrdenRequest(BaseModel):
     decisiones: Annotated[list[ItemDecision], Field(min_length=1)]
+
+
+# Regla espejo de la DB (_normalizar_factura): 3-30 chars, empieza y termina
+# en alfanumérico; - / . y espacio permitidos en el medio.
+_FACTURA_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9 ./-]{1,28}[A-Za-z0-9]$"
+
+
+class FacturaRequest(BaseModel):
+    """Número de factura del despacho. Obligatorio: sin factura no hay despacho."""
+
+    factura_numero: Annotated[str, Field(pattern=_FACTURA_PATTERN)]
+
+    @field_validator("factura_numero", mode="before")
+    @classmethod
+    def _strip(cls, v: object) -> object:
+        return v.strip() if isinstance(v, str) else v

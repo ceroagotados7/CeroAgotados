@@ -1,12 +1,12 @@
 "use client";
 
-import { PiggyBank } from "lucide-react";
+import { PiggyBank, ReceiptText } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AppBar } from "@/components/shell";
-import { Card, Spinner } from "@/components/ui";
+import { Badge, Card, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
-import { cop, miles } from "@/lib/format";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, miles } from "@/lib/format";
 import type { AdminGanancias } from "@/lib/types";
 
 export default function GananciasPage() {
@@ -89,14 +89,29 @@ export default function GananciasPage() {
         ) : (
           <Card className="divide-y divide-line">
             {data.ultimas_transacciones.map((t) => (
-              <div key={t.codigo} className="flex items-center gap-3 p-3.5">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13.5px] font-semibold">
-                    #{t.codigo} <span className="font-normal text-muted">· {t.farmacia} ← {t.proveedor}</span>
-                  </p>
-                  <p className="text-[11.5px] text-muted">{cop(t.total)} · comisión {pct}%</p>
+              <div key={t.codigo} className="p-3.5">
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13.5px] font-semibold">
+                      #{t.codigo} <span className="font-normal text-muted">· {t.farmacia} ← {t.proveedor}</span>
+                    </p>
+                    <p className="text-[11.5px] text-muted">{cop(t.total)} · comisión {pct}%</p>
+                  </div>
+                  <p className="font-display text-[13.5px] font-bold text-primary-800">+{cop(t.comision)}</p>
                 </div>
-                <p className="font-display text-[13.5px] font-bold text-primary-800">+{cop(t.comision)}</p>
+                {/* Trazabilidad punto a punto (Grupo 4): la factura del despacho. */}
+                <div className="mt-2 flex items-center gap-2">
+                  {t.factura_numero ? (
+                    <Badge tone="teal">
+                      <ReceiptText size={11} /> Factura {t.factura_numero}
+                    </Badge>
+                  ) : (
+                    <Badge tone="gray">Sin factura aún</Badge>
+                  )}
+                  <Badge tone={ESTADO_ORDEN_TONE[t.estado] ?? "gray"}>
+                    {ESTADO_ORDEN_LABEL[t.estado] ?? t.estado}
+                  </Badge>
+                </div>
               </div>
             ))}
           </Card>

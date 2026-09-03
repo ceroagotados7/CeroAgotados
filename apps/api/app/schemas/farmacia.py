@@ -74,5 +74,8 @@ class PedidoFarmacia(BaseModel):
     total_solicitado: float
     proveedor_alias: str
     created_at: str
+    # Factura con la que el proveedor despachó: la farmacia la coteja contra
+    # la física al recibir. No revela identidad (el alias sigue anónimo).
+    factura_numero: str | None = None
     items: list[OrdenItem] = []
     eventos: list[OrdenEvento] = []

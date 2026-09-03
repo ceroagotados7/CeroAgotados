@@ -214,7 +214,14 @@ def test_cancelar_y_recibir_ciclo(client, headers_farmacia1, headers_proveedor1,
         for i in detalle["items"]
     ]
     assert client.post(f"/v1/ordenes/{orden2}/aceptar", json={"decisiones": decisiones}, headers=headers_proveedor1).status_code == 200
-    assert client.post(f"/v1/ordenes/{orden2}/despachar", headers=headers_proveedor1).status_code == 200
+    assert (
+        client.post(
+            f"/v1/ordenes/{orden2}/despachar",
+            json={"factura_numero": "FV-FLOW-2"},
+            headers=headers_proveedor1,
+        ).status_code
+        == 200
+    )
 
     r_rec = client.post(f"/v1/farmacia/pedidos/{orden2}/recibir", headers=headers_farmacia1)
     assert r_rec.status_code == 200, r_rec.text

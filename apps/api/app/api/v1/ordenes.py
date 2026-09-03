@@ -5,7 +5,7 @@ from postgrest.exceptions import APIError
 
 from app.deps import CurrentUserId, ProviderOrgId, SupabaseDep
 from app.schemas.common import ApiResponse
-from app.schemas.ordenes import AceptarOrdenRequest, Orden
+from app.schemas.ordenes import AceptarOrdenRequest, FacturaRequest, Orden
 
 router = APIRouter(prefix="/ordenes", tags=["ordenes"])
 
@@ -84,13 +84,48 @@ async def aceptar_orden(
 
 @router.post("/{orden_id}/despachar")
 async def despachar_orden(
-    orden_id: str, org_id: ProviderOrgId, user_id: CurrentUserId, db: SupabaseDep
+    orden_id: str,
+    payload: FacturaRequest,
+    org_id: ProviderOrgId,
+    user_id: CurrentUserId,
+    db: SupabaseDep,
 ) -> ApiResponse[Orden]:
-    """Marca una orden aceptada como despachada."""
+    """Marca una orden aceptada como despachada. La factura es OBLIGATORIA:
+    queda congelada en la orden y visible para farmacia y admin (trazabilidad)."""
     try:
         db.rpc(
             "despachar_orden",
-            {"p_orden_id": orden_id, "p_proveedor_id": org_id, "p_actor": user_id},
+            {
+                "p_orden_id": orden_id,
+                "p_proveedor_id": org_id,
+                "p_actor": user_id,
+                "p_factura_numero": payload.factura_numero,
+            },
+        ).execute()
+    except APIError as exc:
+        raise _map_rpc_error(exc)
+    return ApiResponse(data=_cargar_orden(db, orden_id, org_id))
+
+
+@router.patch("/{orden_id}/factura")
+async def corregir_factura(
+    orden_id: str,
+    payload: FacturaRequest,
+    org_id: ProviderOrgId,
+    user_id: CurrentUserId,
+    db: SupabaseDep,
+) -> ApiResponse[Orden]:
+    """Corrige el número de factura de una orden YA despachada (auditado como
+    evento). Tras la recepción de la farmacia el número queda inmutable."""
+    try:
+        db.rpc(
+            "corregir_factura",
+            {
+                "p_orden_id": orden_id,
+                "p_proveedor_id": org_id,
+                "p_actor": user_id,
+                "p_factura_numero": payload.factura_numero,
+            },
         ).execute()
     except APIError as exc:
         raise _map_rpc_error(exc)
@@ -120,4 +155,6 @@ def _map_rpc_error(exc: APIError) -> HTTPException:
         return HTTPException(status.HTTP_404_NOT_FOUND, "orden_no_encontrada")
     if "estado_no_editable" in msg or "estado_no_despachable" in msg:
         return HTTPException(status.HTTP_409_CONFLICT, msg)
+    if "factura_invalida" in msg:
+        return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "factura_invalida")
     return HTTPException(status.HTTP_400_BAD_REQUEST, msg or "error_rpc")

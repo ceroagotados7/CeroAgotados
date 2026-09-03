@@ -81,6 +81,9 @@ export type Orden = {
   estado: EstadoOrden;
   total: number;
   created_at: string;
+  /** Factura del despacho (trazabilidad). Null si aún no se despacha. */
+  factura_numero?: string | null;
+  factura_registrada_at?: string | null;
   farmacia?: OrgRef | null;
   items: OrdenItem[];
   eventos?: OrdenEvento[];
@@ -196,6 +199,8 @@ export type PedidoFarmacia = {
   total_solicitado: number;
   proveedor_alias: string;
   created_at: string;
+  /** Factura con la que despachó el proveedor (cotejar contra la física). */
+  factura_numero?: string | null;
   items: OrdenItem[];
   eventos?: OrdenEvento[];
 };
@@ -329,5 +334,13 @@ export type AdminGanancias = {
   gmv_mes: number;
   margen_por_orden: number;
   margen_por_producto: { nombre: string; gmv: number; comision: number; cajas: number }[];
-  ultimas_transacciones: { codigo: string; farmacia: string; proveedor: string; total: number; comision: number }[];
+  ultimas_transacciones: {
+    codigo: string;
+    farmacia: string;
+    proveedor: string;
+    total: number;
+    comision: number;
+    estado: EstadoOrden;
+    factura_numero?: string | null;
+  }[];
 };

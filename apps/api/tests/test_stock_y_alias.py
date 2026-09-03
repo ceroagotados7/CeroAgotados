@@ -122,8 +122,15 @@ def test_aceptacion_parcial_asume_agotado(
     assert r_ac.json()["data"]["estado"] == "aceptada_parcial"
     assert _stock(of["id"]) == 0  # parcial → agotado
 
-    # Despachar no mueve más stock.
-    assert client.post(f"/v1/ordenes/{orden_id}/despachar", headers=headers_proveedor1).status_code == 200
+    # Despachar no mueve más stock (con factura: obligatoria desde el Grupo 4).
+    assert (
+        client.post(
+            f"/v1/ordenes/{orden_id}/despachar",
+            json={"factura_numero": "FV-TEST-1"},
+            headers=headers_proveedor1,
+        ).status_code
+        == 200
+    )
     assert _stock(of["id"]) == 0
 
 
@@ -298,7 +305,11 @@ def test_timeline_eventos_ciclo_completo(
     item = _item_unico(client, headers_proveedor1, orden_id)
     _decidir(client, headers_proveedor1, orden_id,
              [{"item_id": item["id"], "estado": "aceptado", "cantidad_aceptada": 1}])
-    client.post(f"/v1/ordenes/{orden_id}/despachar", headers=headers_proveedor1)
+    client.post(
+        f"/v1/ordenes/{orden_id}/despachar",
+        json={"factura_numero": "FV-TL-1"},
+        headers=headers_proveedor1,
+    )
     client.post(f"/v1/farmacia/pedidos/{orden_id}/recibir", headers=headers_farmacia1)
 
     # Farmacia (f6): eventos ordenados, con timestamp y SIN identidades.

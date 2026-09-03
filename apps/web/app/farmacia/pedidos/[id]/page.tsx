@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCheck, PackageCheck, Search, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCheck, PackageCheck, ReceiptText, Search, XCircle } from "lucide-react";
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 
@@ -124,6 +124,27 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
           </Card>
         )}
 
+        {/* Factura del despacho (Grupo 4): la farmacia la coteja contra la
+            física que llega con la mercancía. No revela al proveedor. */}
+        {pedido.factura_numero && (
+          <Card className="mb-3 flex items-center gap-3 p-3.5">
+            <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+              <ReceiptText size={20} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted">
+                Factura del proveedor
+              </p>
+              <p className="font-display text-[16px] font-extrabold leading-tight">
+                {pedido.factura_numero}
+              </p>
+              <p className="mt-0.5 text-[11.5px] text-muted">
+                Compárala con la factura física que llega con la mercancía.
+              </p>
+            </div>
+          </Card>
+        )}
+
         {/* Ítems */}
         <p className="mb-2 px-1 text-[12px] font-semibold text-muted">PRODUCTOS DEL PEDIDO</p>
         <Card className="mb-3 divide-y divide-line">
@@ -205,7 +226,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
         </Card>
 
         {/* Seguimiento: cada estado con su fecha y hora. */}
-        <OrdenTimeline eventos={pedido.eventos} />
+        <OrdenTimeline eventos={pedido.eventos} facturaNumero={pedido.factura_numero} />
 
         {error && <p className="mb-3 text-center text-[12.5px] text-danger">{error}</p>}
 

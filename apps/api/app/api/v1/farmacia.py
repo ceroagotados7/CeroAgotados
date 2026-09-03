@@ -27,7 +27,7 @@ _PRODUCTO_COLS = (
     "laboratorio, categoria, tipo, via_administracion, condicion_venta"
 )
 _ITEM_PRODUCTO = "producto:producto_maestro!orden_items_producto_maestro_id_fkey(id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria)"
-_PEDIDO_SELECT = f"id, codigo, estado, total, proveedor_id, proveedor_alias, created_at, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
+_PEDIDO_SELECT = f"id, codigo, estado, total, proveedor_id, proveedor_alias, created_at, factura_numero, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
 
 # Sal del alias anónimo. No es un secreto criptográfico: solo garantiza que el
 # alias no sea derivable del id por un tercero casual.
@@ -327,6 +327,7 @@ def _a_pedido(row: dict) -> PedidoFarmacia:
         # Alias congelado al crear la orden; fallback para filas históricas.
         proveedor_alias=row.get("proveedor_alias") or _alias_proveedor(row["proveedor_id"]),
         created_at=row["created_at"],
+        factura_numero=row.get("factura_numero"),
         items=items,
         eventos=eventos,
     )

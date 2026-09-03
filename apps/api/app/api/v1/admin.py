@@ -42,7 +42,7 @@ _MESES = [
 ]
 
 _ORDEN_SELECT = (
-    "id, codigo, total, estado, created_at, farmacia_id, proveedor_id,"
+    "id, codigo, total, estado, created_at, farmacia_id, proveedor_id, factura_numero,"
     " farmacia:organizaciones!ordenes_farmacia_id_fkey(razon_social),"
     " proveedor:organizaciones!ordenes_proveedor_id_fkey(razon_social)"
 )
@@ -570,6 +570,8 @@ def admin_ganancias(admin: AdminUserId, db: SupabaseDep) -> ApiResponse[AdminGan
             proveedor=(v.get("proveedor") or {}).get("razon_social", "Proveedor"),
             total=float(v["total"]),
             comision=round(float(v["total"]) * pct, 2),
+            estado=v["estado"],
+            factura_numero=v.get("factura_numero"),
         )
         for v in recientes
     ]

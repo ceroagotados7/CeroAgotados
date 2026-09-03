@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, CheckCheck, Info, MapPin, MessageCircle, Minus, Pill, Plus, Printer, Truck, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCheck, Info, MapPin, MessageCircle, Minus, Pill, Plus, Printer, ReceiptText, Truck, X } from "lucide-react";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 
 import { OrdenImprimible } from "@/components/orden-imprimible";
@@ -9,7 +9,8 @@ import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, IconButton, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { InputMiles } from "@/components/input-miles";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
+import { facturaValida, normalizarFactura } from "@/lib/factura";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, fechaHora, hace, iniciales, miles } from "@/lib/format";
 import type { ItemDecision, Oferta, Orden, OrdenItem } from "@/lib/types";
 
 export default function OrdenDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +25,10 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
   const [confirmando, setConfirmando] = useState<null | "aceptar" | "rechazar">(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Factura del despacho (obligatoria) y su corrección posterior.
+  const [factura, setFactura] = useState("");
+  const [corrigiendo, setCorrigiendo] = useState(false);
+  const [facturaEdit, setFacturaEdit] = useState("");
 
   const load = useCallback(async () => {
     const o = await api.get<Orden>(`/ordenes/${id}`);
@@ -114,13 +119,44 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
   }
 
   async function despachar() {
+    // La factura es obligatoria: el botón ya lo impide, esto es el cinturón.
+    if (!facturaValida(factura)) {
+      setError("Escribe el número de factura para despachar.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await api.post(`/ordenes/${id}/despachar`);
+      await api.post(`/ordenes/${id}/despachar`, {
+        // Mayúsculas: convención de numeración de facturas (y coincide con la UI).
+        factura_numero: normalizarFactura(factura).toUpperCase(),
+      });
       await load();
     } catch (e) {
-      setError(e instanceof ApiCallError ? e.message : "No se pudo despachar.");
+      setError(
+        e instanceof ApiCallError && e.message.includes("factura_invalida")
+          ? "El número de factura no es válido: usa letras, números, guiones, puntos o barras (3 a 30 caracteres)."
+          : e instanceof ApiCallError
+            ? e.message
+            : "No se pudo despachar.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function corregirFactura() {
+    if (!facturaValida(facturaEdit)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.patch(`/ordenes/${id}/factura`, {
+        factura_numero: normalizarFactura(facturaEdit).toUpperCase(),
+      });
+      setCorrigiendo(false);
+      await load();
+    } catch (e) {
+      setError(e instanceof ApiCallError ? e.message : "No se pudo corregir la factura.");
     } finally {
       setBusy(false);
     }
@@ -200,12 +236,85 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
             </Card>
           </>
         ) : (
-          <ResumenLectura orden={orden} />
+          <>
+            {/* Factura enlazada al despacho (Grupo 4): visible y corregible
+                solo mientras la orden siga en 'despachada'. */}
+            {orden.factura_numero && (
+              <Card className="mb-3 p-3.5">
+                {!corrigiendo ? (
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                      <ReceiptText size={20} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10.5px] font-semibold uppercase tracking-wide text-muted">
+                        Factura de venta
+                      </p>
+                      <p className="font-display text-[16px] font-extrabold leading-tight">
+                        {orden.factura_numero}
+                      </p>
+                      {orden.factura_registrada_at && (
+                        <p className="mt-0.5 text-[11.5px] text-muted">
+                          Registrada el {fechaHora(orden.factura_registrada_at)}
+                        </p>
+                      )}
+                    </div>
+                    {orden.estado === "despachada" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-none"
+                        onClick={() => {
+                          setFacturaEdit(orden.factura_numero ?? "");
+                          setCorrigiendo(true);
+                        }}
+                      >
+                        Corregir
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="label" htmlFor="factura-corregir">
+                      Corregir número de factura
+                    </label>
+                    <input
+                      id="factura-corregir"
+                      type="text"
+                      value={facturaEdit}
+                      onChange={(e) => setFacturaEdit(e.target.value)}
+                      maxLength={40}
+                      autoComplete="off"
+                      className="input font-semibold uppercase"
+                    />
+                    <p className="mt-1 text-[11.5px] text-muted">
+                      La corrección queda registrada en el seguimiento del pedido.
+                    </p>
+                    <div className="mt-2.5 flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1" disabled={busy} onClick={() => setCorrigiendo(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="flex-1"
+                        disabled={busy || !facturaValida(facturaEdit)}
+                        onClick={corregirFactura}
+                      >
+                        {busy ? "Guardando…" : "Guardar"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )}
+            <ResumenLectura orden={orden} />
+          </>
         )}
 
         {/* Seguimiento: cada estado con su fecha y hora. */}
         <div className="mt-3">
-          <OrdenTimeline eventos={orden.eventos} />
+          <OrdenTimeline eventos={orden.eventos} facturaNumero={orden.factura_numero} />
         </div>
 
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
@@ -236,9 +345,38 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
             </>
           )
         ) : orden.estado === "aceptada_total" || orden.estado === "aceptada_parcial" ? (
-          <Button variant="teal" size="lg" block disabled={busy} onClick={despachar}>
-            <Truck size={18} /> {busy ? "Despachando…" : "Marcar como despachada"}
-          </Button>
+          <>
+            {/* Regla dura (Grupo 4): ningún despacho sin factura enlazada. */}
+            <div>
+              <label className="label" htmlFor="factura-despacho">
+                Número de factura de venta
+              </label>
+              <div className="relative">
+                <ReceiptText size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                <input
+                  id="factura-despacho"
+                  type="text"
+                  value={factura}
+                  onChange={(e) => setFactura(e.target.value)}
+                  maxLength={40}
+                  placeholder="Ej: FV-10425"
+                  autoComplete="off"
+                  className="input pl-10 font-semibold uppercase placeholder:normal-case"
+                />
+              </div>
+              <p className="mt-1 text-[11.5px] text-muted">
+                Queda enlazada al pedido y visible para la farmacia y Cero Agotados.
+              </p>
+            </div>
+            <Button variant="teal" size="lg" block disabled={busy || !facturaValida(factura)} onClick={despachar}>
+              <Truck size={18} />{" "}
+              {busy
+                ? "Despachando…"
+                : facturaValida(factura)
+                  ? `Despachar con factura ${normalizarFactura(factura).toUpperCase()}`
+                  : "Escribe la factura para despachar"}
+            </Button>
+          </>
         ) : (
           <div className="flex items-center justify-center gap-2 py-1 text-[13px] text-muted">
             <Badge tone={ESTADO_ORDEN_TONE[orden.estado]}>{ESTADO_ORDEN_LABEL[orden.estado]}</Badge>

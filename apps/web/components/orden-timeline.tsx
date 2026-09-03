@@ -13,10 +13,18 @@ const EVENTO_LABEL: Record<string, string> = {
   despachada: "Despachado",
   completada: "Entrega confirmada",
   cancelada: "Cancelado",
+  factura_corregida: "Factura corregida",
 };
 
-/** Timeline de estados de una orden con timestamp por transición. */
-export function OrdenTimeline({ eventos }: { eventos?: OrdenEvento[] }) {
+/** Timeline de estados de una orden con timestamp por transición.
+ *  `facturaNumero` anexa el número al hito de despacho (trazabilidad). */
+export function OrdenTimeline({
+  eventos,
+  facturaNumero,
+}: {
+  eventos?: OrdenEvento[];
+  facturaNumero?: string | null;
+}) {
   if (!eventos || eventos.length === 0) return null;
   return (
     <>
@@ -39,6 +47,9 @@ export function OrdenTimeline({ eventos }: { eventos?: OrdenEvento[] }) {
                 <div className="min-w-0">
                   <p className={`text-[13px] leading-tight ${ultimo ? "font-semibold" : "text-soft"}`}>
                     {EVENTO_LABEL[e.tipo] ?? e.tipo}
+                    {e.tipo === "despachada" && facturaNumero && (
+                      <span className="text-muted"> · Factura {facturaNumero}</span>
+                    )}
                   </p>
                   <p className="mt-0.5 text-[11.5px] text-muted">{fechaHora(e.created_at)}</p>
                 </div>

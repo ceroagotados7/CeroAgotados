@@ -53,6 +53,9 @@ class TransaccionReciente(BaseModel):
     proveedor: str
     total: float
     comision: float
+    estado: str
+    # Trazabilidad punto a punto: null si el proveedor aún no despachó.
+    factura_numero: str | None = None
 
 
 class MargenProducto(BaseModel):
