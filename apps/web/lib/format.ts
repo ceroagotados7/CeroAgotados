@@ -35,10 +35,12 @@ export const ESTADO_ORDEN_LABEL: Record<string, string> = {
   cancelada: "Cancelada",
 };
 
-/** Tono de badge por estado de orden (design system). */
+/** Tono de badge por estado de orden (design system).
+ *  aceptada_parcial es ÁMBAR (no teal): hubo faltantes y la farmacia debe
+ *  notarlo de un vistazo (feedback del fundador). */
 export const ESTADO_ORDEN_TONE: Record<string, "green" | "teal" | "amber" | "red" | "gray"> = {
   pendiente: "amber",
-  aceptada_parcial: "teal",
+  aceptada_parcial: "amber",
   aceptada_total: "green",
   despachada: "green",
   completada: "green",

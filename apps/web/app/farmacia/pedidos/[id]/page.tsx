@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCheck, PackageCheck, Search, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCheck, PackageCheck, Search, XCircle } from "lucide-react";
 import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 
@@ -8,6 +8,7 @@ import { OrdenTimeline } from "@/components/orden-timeline";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
+import { cajas, faltantesDeOrden } from "@/lib/faltantes";
 import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, miles } from "@/lib/format";
 import type { PedidoFarmacia } from "@/lib/types";
 
@@ -45,12 +46,9 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
 
   const gestionado = pedido.estado !== "pendiente";
   const noDisponible = pedido.items.filter((i) => i.estado_item === "rechazado");
-  // Regla del fundador: una aceptación PARCIAL también significa que el
-  // proveedor no tenía — el faltante se puede pedir a otro proveedor.
-  const conFaltante = (i: (typeof pedido.items)[number]) =>
-    i.estado_item === "rechazado" ||
-    (i.estado_item === "aceptado" && i.cantidad_aceptada < i.cantidad_solicitada);
-  const faltantes = pedido.estado === "cancelada" ? [] : pedido.items.filter(conFaltante);
+  // Faltantes (rechazos y parciales) con lógica pura testeable (lib/faltantes).
+  const faltantes = faltantesDeOrden(pedido.items, pedido.estado);
+  const faltantePorItem = new Map(faltantes.map((f) => [f.itemId, f]));
   const descuento = noDisponible.reduce(
     (acc, i) => acc + i.cantidad_solicitada * i.precio_unitario_snapshot,
     0,
@@ -92,22 +90,36 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
           </Badge>
         </Card>
 
-        {/* Aviso de novedades (f6): faltantes (sin stock O parciales), con acción. */}
+        {/* Aviso de novedades (f6), rediseñado (feedback del fundador): titular
+            "Proveedor X no aceptó:" + una viñeta por producto, legible de un
+            vistazo, con lo que falta en negrilla. */}
         {faltantes.length > 0 && (
-          <Card className="mb-3 border border-amber-200 bg-amber-50/60 p-3.5">
-            <p className="text-[13px] font-semibold text-amber-800">
-              {faltantes.length} producto{faltantes.length !== 1 && "s"} con faltante
+          <Card className="mb-3 border-2 border-amber-300 bg-amber-50 p-4">
+            <p className="flex items-center gap-2 text-[14.5px] font-bold leading-tight text-amber-900">
+              <AlertTriangle size={17} className="flex-none" />
+              {pedido.proveedor_alias} no aceptó:
             </p>
-            <p className="mt-0.5 text-[12.5px] text-amber-700">
-              El proveedor no tenía{" "}
-              {faltantes
-                .map((i) =>
-                  i.estado_item === "rechazado"
-                    ? (i.producto?.nombre ?? "un producto")
-                    : `${i.cantidad_solicitada - i.cantidad_aceptada} de las ${i.cantidad_solicitada} cajas de ${i.producto?.nombre ?? "un producto"}`,
-                )
-                .join("; ")}
-              . Pide el faltante a otro proveedor — este pedido no se modifica.
+            <ul className="mt-2.5 space-y-2">
+              {faltantes.map((f) => (
+                <li key={f.itemId} className="flex gap-2.5 text-[13px] leading-snug text-amber-900">
+                  <span className="mt-[6px] h-1.5 w-1.5 flex-none rounded-full bg-amber-500" aria-hidden />
+                  <span className="min-w-0">
+                    <b>{f.nombre}</b>
+                    {f.tipo === "sin_stock" ? (
+                      <> — sin stock: no despachó {f.pedidas === 1 ? "la caja pedida" : <>ninguna de las <b>{cajas(f.pedidas)}</b> pedidas</>}</>
+                    ) : (
+                      <>
+                        {" — solo despachó "}{cajas(f.aceptadas)} de {cajas(f.pedidas)}:{" "}
+                        <b>{f.faltan === 1 ? "falta" : "faltan"} {cajas(f.faltan)}</b>
+                      </>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 border-t border-amber-200 pt-2.5 text-[12.5px] font-medium text-amber-800">
+              Puedes pedir {faltantes.length === 1 ? "el faltante" : "los faltantes"} a otro
+              proveedor desde el botón de cada producto — este pedido no se modifica.
             </p>
           </Card>
         )}
@@ -139,7 +151,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                     <p className="mt-0.5 text-[12px] text-muted">
                       {miles(cantidad)} caja{cantidad !== 1 && "s"} × {cop(i.precio_unitario_snapshot)}
                       {gestionado && i.estado_item === "aceptado" && i.cantidad_aceptada < i.cantidad_solicitada && (
-                        <span className="text-amber-600"> · de {i.cantidad_solicitada} pedidas</span>
+                        <span className="font-semibold text-amber-700"> · de {miles(i.cantidad_solicitada)} pedidas</span>
                       )}
                     </p>
                   </div>
@@ -156,7 +168,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                   </div>
                 </div>
                 {/* Acción directa: comprar el faltante (rechazo O parcial) a otro proveedor. */}
-                {conFaltante(i) && (
+                {faltantePorItem.has(i.id) && (
                   <Link
                     href={`/farmacia/comparar/${i.producto_maestro_id}`}
                     className="mt-2.5 flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 py-2 text-[12.5px] font-semibold text-amber-800 transition hover:border-amber-400"
@@ -164,7 +176,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                     <Search size={14} />
                     {rechazado
                       ? `Buscar otras opciones de ${i.producto?.nombre ?? "este producto"}`
-                      : `Pedir ${i.cantidad_solicitada - i.cantidad_aceptada} caja${i.cantidad_solicitada - i.cantidad_aceptada !== 1 ? "s" : ""} faltante${i.cantidad_solicitada - i.cantidad_aceptada !== 1 ? "s" : ""} a otro proveedor`}
+                      : `Pedir ${cajas(faltantePorItem.get(i.id)!.faltan)} faltante${faltantePorItem.get(i.id)!.faltan !== 1 ? "s" : ""} a otro proveedor`}
                   </Link>
                 )}
               </div>

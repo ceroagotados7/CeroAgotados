@@ -1,12 +1,13 @@
 "use client";
 
-import { ClipboardList } from "lucide-react";
+import { AlertTriangle, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { AppBar, refrescarBadge } from "@/components/shell";
 import { Avatar, Badge, Card, Chip, EmptyState, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
+import { faltantesDeOrden } from "@/lib/faltantes";
 import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, miles } from "@/lib/format";
 import type { PedidoFarmacia } from "@/lib/types";
 
@@ -82,6 +83,9 @@ export default function MisPedidosPage() {
             {visibles.map((p) => {
               const nItems = p.items.length;
               const cajas = p.items.reduce((acc, i) => acc + i.cantidad_solicitada, 0);
+              // Resaltar novedades desde la lista (feedback del fundador): que
+              // un pedido con faltantes se note sin tener que abrirlo.
+              const nFaltantes = faltantesDeOrden(p.items, p.estado).length;
               return (
                 <Link key={p.id} href={`/farmacia/pedidos/${p.id}`} className="block">
                   <Card className="p-3.5">
@@ -107,6 +111,14 @@ export default function MisPedidosPage() {
                         {cop(p.total > 0 ? p.total : p.total_solicitado)}
                       </p>
                     </div>
+                    {nFaltantes > 0 && (
+                      <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[12px] font-semibold text-amber-800">
+                        <AlertTriangle size={13} className="flex-none" />
+                        {nFaltantes === 1
+                          ? "1 producto no aceptado — revisa el detalle"
+                          : `${nFaltantes} productos no aceptados — revisa el detalle`}
+                      </p>
+                    )}
                   </Card>
                 </Link>
               );
