@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { BannerVerificacion } from "@/components/banner-verificacion";
+import { ScrollInfinito } from "@/components/scroll-infinito";
 import { AppBar } from "@/components/shell";
 import { Card, Chip, EmptyState, SearchBar, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -15,31 +16,47 @@ import type { PedidoFarmacia, ProductoBusqueda } from "@/lib/types";
 
 type Recompra = { producto_id: string; nombre: string; veces: number };
 
+const PAGINA = 30;
+
 export default function BuscarPage() {
   const me = useMe();
   const cart = useCart();
   const [q, setQ] = useState("");
   const [categoria, setCategoria] = useState<string | null>(null);
   const [productos, setProductos] = useState<ProductoBusqueda[] | null>(null);
+  const [pagina, setPagina] = useState(0);
+  const [hayMas, setHayMas] = useState(false);
+  const [cargandoMas, setCargandoMas] = useState(false);
   const [recompra, setRecompra] = useState<Recompra[]>([]);
+
+  // Cambiar la búsqueda reinicia la paginación del scroll infinito.
+  useEffect(() => {
+    setPagina(0);
+    setCargandoMas(false);
+  }, [q]);
 
   useEffect(() => {
     let active = true;
     const t = setTimeout(async () => {
       try {
         const data = await api.get<ProductoBusqueda[]>(
-          `/farmacia/buscar?q=${encodeURIComponent(q)}`,
+          `/farmacia/buscar?q=${encodeURIComponent(q)}&limit=${PAGINA}&offset=${pagina * PAGINA}`,
         );
-        if (active) setProductos(data);
+        if (!active) return;
+        // Una página llena sugiere que hay más (el backend no da el total).
+        setHayMas(data.length === PAGINA);
+        setProductos((prev) => (pagina === 0 || !prev ? data : [...prev, ...data]));
       } catch {
         if (active) setProductos([]);
+      } finally {
+        if (active) setCargandoMas(false);
       }
     }, 250);
     return () => {
       active = false;
       clearTimeout(t);
     };
-  }, [q]);
+  }, [q, pagina]);
 
   // "Vuelve a pedir" (f1): lo que esta farmacia ya pidió antes, 1 toque para recomprar.
   useEffect(() => {
@@ -218,6 +235,19 @@ export default function BuscarPage() {
                 </Link>
               );
             })}
+
+            {/* Scroll infinito (feedback del equipo): la página siguiente
+                llega sola, sin "ver más". */}
+            {hayMas && (
+              <ScrollInfinito
+                cargando={cargandoMas}
+                onMore={() => {
+                  if (cargandoMas) return;
+                  setCargandoMas(true);
+                  setPagina((n) => n + 1);
+                }}
+              />
+            )}
           </div>
         )}
       </div>

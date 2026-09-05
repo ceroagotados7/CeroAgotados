@@ -82,6 +82,7 @@ def buscar_productos(
     categoria: Annotated[str | None, Query(description="Grupo farmacológico")] = None,
     forma_farmaceutica: Annotated[str | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> ApiResponse[list[ProductoBusqueda]]:
     """Productos del maestro que tienen ofertas activas con stock, con el número
     de opciones y el precio "desde" (f1). Nunca expone qué proveedores ofertan."""
@@ -121,6 +122,8 @@ def buscar_productos(
                 "p_forma": forma_farmaceutica,
                 "p_incluir": list(conteo.keys()),
                 "p_limit": limit,
+                # Paginación para el scroll infinito de la búsqueda (f1).
+                "p_offset": offset,
             },
         ).execute()
     ).data or []

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { InputMiles } from "@/components/input-miles";
+import { ScrollInfinito } from "@/components/scroll-infinito";
 import { BackBar } from "@/components/shell";
 import { Button, SearchBar, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
@@ -24,6 +25,8 @@ export default function AgregarPage() {
   const [resultados, setResultados] = useState<ProductoMaestro[] | null>(null);
   const [pagina, setPagina] = useState(0);
   const [hayMas, setHayMas] = useState(false);
+  // Guard del scroll infinito: mientras una página viaja, no se pide otra.
+  const [cargandoMas, setCargandoMas] = useState(false);
   const [sel, setSel] = useState<Seleccion>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +42,7 @@ export default function AgregarPage() {
   // Cambiar de búsqueda o de filtro reinicia la paginación.
   useEffect(() => {
     setPagina(0);
+    setCargandoMas(false);
   }, [q, forma, laboratorio, tipo]);
 
   useEffect(() => {
@@ -60,6 +64,8 @@ export default function AgregarPage() {
         setResultados((prev) => (pagina === 0 || !prev ? data : [...prev, ...data]));
       } catch {
         if (active) setResultados([]);
+      } finally {
+        if (active) setCargandoMas(false);
       }
     }, 250);
     return () => {
@@ -266,13 +272,17 @@ export default function AgregarPage() {
               );
             })}
 
+            {/* Scroll infinito (feedback del equipo, caso Ecar con 28 clicks):
+                la página siguiente se carga sola al acercarse al fondo. */}
             {hayMas && (
-              <button
-                onClick={() => setPagina((n) => n + 1)}
-                className="card-flat w-full py-3 text-center text-[13px] font-semibold text-primary"
-              >
-                Ver más resultados
-              </button>
+              <ScrollInfinito
+                cargando={cargandoMas}
+                onMore={() => {
+                  if (cargandoMas) return;
+                  setCargandoMas(true);
+                  setPagina((n) => n + 1);
+                }}
+              />
             )}
           </div>
         )}
