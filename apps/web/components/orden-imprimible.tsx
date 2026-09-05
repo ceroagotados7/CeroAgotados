@@ -1,16 +1,18 @@
 "use client";
 
 import { cop, fechaHora, miles } from "@/lib/format";
+import { valorizarOrden } from "@/lib/imprimible";
 import type { Orden } from "@/lib/types";
 
 /** Hoja imprimible del pedido: para llevar a bodega y verificar antes de
- *  aceptar/rechazar. Solo visible en la impresión (@media print). Se usa desde
- *  el detalle de la orden y directamente desde la bandeja de órdenes. */
+ *  aceptar/rechazar, y para cotejar 1:1 contra la factura definitiva
+ *  (valorizada renglón por renglón, feedback de Edgar). Solo visible en la
+ *  impresión (@media print). Se usa desde el detalle de la orden y
+ *  directamente desde la bandeja de órdenes. */
 export function OrdenImprimible({ orden }: { orden: Orden }) {
-  const total = orden.items.reduce(
-    (acc, i) => acc + i.cantidad_solicitada * i.precio_unitario_snapshot,
-    0,
-  );
+  // Pendiente → lo solicitado (a verificar en bodega); gestionada → lo
+  // aceptado (lo que se factura). Regla en lib/imprimible (testeada).
+  const { gestionada, filas, total } = valorizarOrden(orden);
   return (
     <div className="orden-print" aria-hidden>
       <style>{`
@@ -26,7 +28,9 @@ export function OrdenImprimible({ orden }: { orden: Orden }) {
           .orden-print table { width: 100%; border-collapse: collapse; margin-top: 14px; }
           .orden-print th, .orden-print td { border: 1px solid #999; padding: 7px 9px; text-align: left; }
           .orden-print th { background: #eee; font-size: 11px; text-transform: uppercase; }
+          .orden-print td.num, .orden-print th.num { text-align: right; }
           .orden-print .caja { display: inline-block; width: 13px; height: 13px; border: 1.5px solid #000; }
+          .orden-print tfoot td { font-weight: bold; border-top: 2px solid #000; }
         }
       `}</style>
       <h1 style={{ fontSize: 19, margin: 0 }}>Pedido #{orden.codigo} — Cero Agotados</h1>
@@ -41,40 +45,55 @@ export function OrdenImprimible({ orden }: { orden: Orden }) {
         </p>
       )}
       <p style={{ margin: "2px 0 0" }}>Recibido: {fechaHora(orden.created_at)}</p>
+      {/* La factura enlazada al despacho (Grupo 4), cuando ya existe. */}
+      {orden.factura_numero && (
+        <p style={{ margin: "2px 0 0" }}>
+          Factura de venta: <b>{orden.factura_numero}</b>
+        </p>
+      )}
       <table>
         <thead>
           <tr>
-            <th style={{ width: 30 }}>OK</th>
+            {!gestionada && <th style={{ width: 30 }}>OK</th>}
             <th>Producto</th>
             <th>Presentación</th>
-            {/* El laboratorio identifica el producto exacto en bodega
-                (feedback del fundador: no aparecía en el imprimible). */}
             <th>Laboratorio</th>
-            <th style={{ width: 90 }}>Cajas pedidas</th>
-            <th style={{ width: 110 }}>Cajas en bodega</th>
+            <th className="num" style={{ width: 70 }}>
+              {gestionada ? "Cajas" : "Cajas pedidas"}
+            </th>
+            <th className="num" style={{ width: 90 }}>Vr. unitario</th>
+            <th className="num" style={{ width: 100 }}>Subtotal</th>
+            {!gestionada && <th style={{ width: 90 }}>Cajas en bodega</th>}
           </tr>
         </thead>
         <tbody>
-          {orden.items.map((i) => (
-            <tr key={i.id}>
-              <td><span className="caja" /></td>
-              <td>{i.producto?.nombre ?? "Producto"}</td>
-              <td>
-                {[i.producto?.forma_farmaceutica, i.producto?.presentacion].filter(Boolean).join(" · ") || "—"}
-              </td>
-              <td>{i.producto?.laboratorio ?? "—"}</td>
-              <td>{miles(i.cantidad_solicitada)}</td>
-              <td />
+          {filas.map((f) => (
+            <tr key={f.itemId}>
+              {!gestionada && <td><span className="caja" /></td>}
+              <td>{f.nombre}</td>
+              <td>{f.presentacion}</td>
+              <td>{f.laboratorio}</td>
+              <td className="num">{miles(f.cantidad)}</td>
+              <td className="num">{cop(f.precioUnitario)}</td>
+              <td className="num">{cop(f.subtotal)}</td>
+              {!gestionada && <td />}
             </tr>
           ))}
         </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan={gestionada ? 5 : 6}>
+              {gestionada ? "Total a facturar" : "Total solicitado (referencia)"}
+            </td>
+            <td className="num">{cop(total)}</td>
+            {!gestionada && <td />}
+          </tr>
+        </tfoot>
       </table>
-      <p style={{ marginTop: 12 }}>
-        Total solicitado (referencia): <b>{cop(total)}</b>
-      </p>
       <p style={{ marginTop: 6, fontSize: 11.5 }}>
-        Verifica las cantidades en bodega y vuelve a Cero Agotados para aceptar, aceptar
-        parcialmente o marcar sin stock cada ítem.
+        {gestionada
+          ? "Cantidades y valores confirmados por el proveedor: deben coincidir renglón por renglón con la factura de venta."
+          : "Verifica las cantidades en bodega y vuelve a Cero Agotados para aceptar, aceptar parcialmente o marcar sin stock cada ítem."}
       </p>
     </div>
   );
