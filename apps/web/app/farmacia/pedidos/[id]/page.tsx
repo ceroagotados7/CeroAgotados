@@ -9,7 +9,7 @@ import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { cajas, faltantesDeOrden } from "@/lib/faltantes";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, miles } from "@/lib/format";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
 import type { PedidoFarmacia } from "@/lib/types";
 
 const ESTADO_ITEM_LABEL: Record<string, string> = {
@@ -76,14 +76,21 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
       <BackBar title={`Pedido #${pedido.codigo}`} subtitle="Detalle del pedido" backHref="/farmacia/pedidos" />
 
       <div className="px-5 pb-28">
-        {/* Cabecera: proveedor anónimo + estado. */}
+        {/* Cabecera: pedido enviado → proveedor con nombre real (transparencia
+            para reclamos, 2026-09-04). El alias queda como referencia. */}
         <Card className="mb-3 flex items-center gap-3 p-3.5">
           <Avatar className="h-11 w-11 bg-teal-600 text-[13px]">
-            {pedido.proveedor_alias.replace("Proveedor ", "").slice(0, 2)}
+            {pedido.proveedor_nombre
+              ? iniciales(pedido.proveedor_nombre)
+              : pedido.proveedor_alias.replace("Proveedor ", "").slice(0, 2)}
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="text-[14.5px] font-semibold leading-tight">{pedido.proveedor_alias}</p>
-            <p className="mt-0.5 text-[12px] text-muted">Creado {hace(pedido.created_at)}</p>
+            <p className="truncate text-[14.5px] font-semibold leading-tight">
+              {pedido.proveedor_nombre ?? pedido.proveedor_alias}
+            </p>
+            <p className="mt-0.5 text-[12px] text-muted">
+              {pedido.proveedor_nombre && `${pedido.proveedor_alias} · `}Creado {hace(pedido.created_at)}
+            </p>
           </div>
           <Badge tone={ESTADO_ORDEN_TONE[pedido.estado] ?? "gray"} className="flex-none">
             {ESTADO_ORDEN_LABEL[pedido.estado] ?? pedido.estado}
@@ -97,7 +104,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
           <Card className="mb-3 border-2 border-amber-300 bg-amber-50 p-4">
             <p className="flex items-center gap-2 text-[14.5px] font-bold leading-tight text-amber-900">
               <AlertTriangle size={17} className="flex-none" />
-              {pedido.proveedor_alias} no aceptó:
+              {pedido.proveedor_nombre ?? pedido.proveedor_alias} no aceptó:
             </p>
             <ul className="mt-2.5 space-y-2">
               {faltantes.map((f) => (

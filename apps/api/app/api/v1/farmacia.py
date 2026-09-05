@@ -27,7 +27,7 @@ _PRODUCTO_COLS = (
     "laboratorio, categoria, tipo, via_administracion, condicion_venta"
 )
 _ITEM_PRODUCTO = "producto:producto_maestro!orden_items_producto_maestro_id_fkey(id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria)"
-_PEDIDO_SELECT = f"id, codigo, estado, total, proveedor_id, proveedor_alias, created_at, factura_numero, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
+_PEDIDO_SELECT = f"id, codigo, estado, total, proveedor_id, proveedor_alias, created_at, factura_numero, proveedor:organizaciones!ordenes_proveedor_id_fkey(razon_social), items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
 
 # Sal del alias anónimo. No es un secreto criptográfico: solo garantiza que el
 # alias no sea derivable del id por un tercero casual.
@@ -253,12 +253,23 @@ def crear_pedido(
             raise HTTPException(status.HTTP_400_BAD_REQUEST, msg) from exc
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "no_se_pudo_crear_pedido") from exc
 
+    # Transparencia post-pedido: con las órdenes ya creadas, la pantalla de
+    # confirmación muestra la razón social real de cada proveedor.
+    prov_ids = list({o["proveedor_id"] for o in (res.data or [])})
+    nombres = {
+        org["id"]: org["razon_social"]
+        for org in (
+            db.table("organizaciones").select("id, razon_social").in_("id", prov_ids).execute()
+        ).data
+        or []
+    }
     creadas = [
         OrdenCreada(
             orden_id=o["orden_id"],
             codigo=o["codigo"],
             # Alias congelado por la RPC (el id real nunca se expone).
             proveedor_alias=o.get("proveedor_alias") or _alias_proveedor(o["proveedor_id"]),
+            proveedor_nombre=nombres.get(o["proveedor_id"]),
             n_items=o["n_items"],
             subtotal=round(float(o["subtotal"]), 2),
         )
@@ -326,6 +337,9 @@ def _a_pedido(row: dict) -> PedidoFarmacia:
         total_solicitado=round(total_solicitado, 2),
         # Alias congelado al crear la orden; fallback para filas históricas.
         proveedor_alias=row.get("proveedor_alias") or _alias_proveedor(row["proveedor_id"]),
+        # Transparencia post-pedido (2026-09-04): pedido enviado → razón social
+        # visible, para que la farmacia sepa a quién reclamar demoras.
+        proveedor_nombre=(row.get("proveedor") or {}).get("razon_social"),
         created_at=row["created_at"],
         factura_numero=row.get("factura_numero"),
         items=items,

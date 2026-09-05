@@ -101,8 +101,9 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
         )}
 
         <p className="mb-2 px-1 text-[12px] text-muted">
-          Ordenado por precio. Los proveedores participan de forma <b>anónima</b>: puedes
-          seleccionar <b>varias opciones</b> y pedir el mismo producto a más de un proveedor.
+          Ordenado por precio. Los proveedores compiten de forma <b>anónima</b> (verás
+          quién es cada uno al enviar el pedido). Puedes seleccionar <b>varias opciones</b>{" "}
+          y pedir el mismo producto a más de un proveedor.
         </p>
 
         {data.opciones.length === 0 ? (

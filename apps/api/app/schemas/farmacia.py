@@ -55,6 +55,10 @@ class OrdenCreada(BaseModel):
     orden_id: str
     codigo: str
     proveedor_alias: str
+    # Transparencia post-pedido (decisión del equipo 2026-09-04): con el pedido
+    # YA ENVIADO la farmacia ve la razón social del proveedor (para reclamos).
+    # El anonimato aplica solo ANTES: buscar/comparar nunca la exponen.
+    proveedor_nombre: str | None = None
     n_items: int
     subtotal: float
 
@@ -65,7 +69,12 @@ class PedidoCreadoResult(BaseModel):
 
 
 class PedidoFarmacia(BaseModel):
-    """Orden vista por la farmacia (f5/f6): sin identidad del proveedor."""
+    """Orden vista por la farmacia (f5/f6).
+
+    Transparencia post-pedido (2026-09-04): una vez enviado el pedido, la
+    farmacia ve la razón social del proveedor (para reclamar demoras). El
+    UUID de la organización sigue sin exponerse jamás.
+    """
 
     id: str
     codigo: str
@@ -73,6 +82,7 @@ class PedidoFarmacia(BaseModel):
     total: float  # total ACEPTADO (lo recalcula el proveedor)
     total_solicitado: float
     proveedor_alias: str
+    proveedor_nombre: str | None = None
     created_at: str
     # Factura con la que el proveedor despachó: la farmacia la coteja contra
     # la física al recibir. No revela identidad (el alias sigue anónimo).

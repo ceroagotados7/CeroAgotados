@@ -9,7 +9,7 @@ import { Avatar, Button, Card, EmptyState } from "@/components/ui";
 import { InputMiles } from "@/components/input-miles";
 import { api, ApiCallError } from "@/lib/api";
 import { cartTotal, clearCart, removeFromCart, setCantidad, useCart, type CartItem } from "@/lib/cart";
-import { cop, miles } from "@/lib/format";
+import { cop, iniciales, miles } from "@/lib/format";
 import { useMe } from "@/lib/me";
 import type { PedidoCreadoResult } from "@/lib/types";
 
@@ -75,13 +75,17 @@ export default function PedidoPage() {
             {creado.ordenes.map((o) => (
               <Link key={o.orden_id} href={`/farmacia/pedidos/${o.orden_id}`} className="block">
                 <Card className="flex items-center gap-3 p-3.5">
+                  {/* Transparencia post-pedido: enviado el pedido, se revela
+                      quién es el proveedor (para reclamos por demoras). */}
                   <Avatar className="h-10 w-10 bg-teal-600 text-[12px]">
-                    {o.proveedor_alias.replace("Proveedor ", "").slice(0, 2)}
+                    {o.proveedor_nombre
+                      ? iniciales(o.proveedor_nombre)
+                      : o.proveedor_alias.replace("Proveedor ", "").slice(0, 2)}
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-semibold">#{o.codigo}</p>
-                    <p className="text-[12px] text-muted">
-                      {o.proveedor_alias} · {o.n_items} producto{o.n_items !== 1 && "s"}
+                    <p className="truncate text-[12px] text-muted">
+                      {o.proveedor_nombre ?? o.proveedor_alias} · {o.n_items} producto{o.n_items !== 1 && "s"}
                     </p>
                   </div>
                   <p className="font-display text-[15px] font-bold">{cop(o.subtotal)}</p>
@@ -120,7 +124,8 @@ export default function PedidoPage() {
         ) : (
           <>
             <p className="mb-3 px-1 text-[12.5px] text-muted">
-              Se generará <b>una orden por proveedor</b>. Los proveedores son anónimos.
+              Se generará <b>una orden por proveedor</b>. Los proveedores son anónimos
+              durante la comparación: verás quién es cada uno al enviar el pedido.
             </p>
             <div className="space-y-3">
               {grupos.map(([alias, items]) => (

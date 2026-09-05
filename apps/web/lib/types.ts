@@ -152,8 +152,11 @@ export type ItemDecision = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Flujo Farmacia (f1–f6). El proveedor SIEMPRE viene anonimizado      */
-/* (`proveedor_alias`): la API nunca expone su identidad a farmacias.  */
+/* Flujo Farmacia (f1–f6). Regla de anonimato (actualizada 2026-09-04): */
+/* ANTES de enviar el pedido (buscar/comparar) el proveedor es anónimo  */
+/* (`proveedor_alias`); una vez ENVIADO, la farmacia ve su razón social */
+/* (`proveedor_nombre`) para poder reclamar demoras. El UUID de la      */
+/* organización nunca se expone.                                        */
 /* ------------------------------------------------------------------ */
 
 export type ProductoBusqueda = ProductoMaestro & {
@@ -182,6 +185,8 @@ export type OrdenCreada = {
   orden_id: string;
   codigo: string;
   proveedor_alias: string;
+  /** Transparencia post-pedido: pedido enviado → razón social visible. */
+  proveedor_nombre?: string | null;
   n_items: number;
   subtotal: number;
 };
@@ -198,6 +203,8 @@ export type PedidoFarmacia = {
   total: number;
   total_solicitado: number;
   proveedor_alias: string;
+  /** Transparencia post-pedido: razón social del proveedor (para reclamos). */
+  proveedor_nombre?: string | null;
   created_at: string;
   /** Factura con la que despachó el proveedor (cotejar contra la física). */
   factura_numero?: string | null;

@@ -19,11 +19,22 @@ RAZONES_SOCIALES = ("Distribuidora Nacional", "FarmaDistribución")
 
 
 def _sin_identidad_de_proveedor(payload: dict) -> bool:
-    """True si el payload no filtra identidad del proveedor por ningún campo."""
+    """True si el payload no filtra identidad del proveedor por ningún campo.
+
+    Aplica SOLO a las respuestas PRE-pedido (buscar/comparar): la regla de
+    transparencia (2026-09-04) revela la razón social una vez enviado el
+    pedido, pero la comparación sigue 100% anónima.
+    """
     texto = json.dumps(payload, ensure_ascii=False)
     if ORG_PROVEEDOR1 in texto or ORG_PROVEEDOR2 in texto:
         return False
     return not any(rs in texto for rs in RAZONES_SOCIALES)
+
+
+def _sin_uuid_de_proveedor(payload: dict) -> bool:
+    """Post-pedido: la razón social es visible, pero el UUID de la org jamás."""
+    texto = json.dumps(payload, ensure_ascii=False)
+    return ORG_PROVEEDOR1 not in texto and ORG_PROVEEDOR2 not in texto
 
 
 @pytest.fixture
@@ -115,7 +126,11 @@ def test_crear_pedido_multiproveedor(client, headers_farmacia1, limpiar_pedidos_
     assert len(data["ordenes"]) == 2  # una orden POR proveedor
     esperado = float(of1["precio"]) * 2 + float(of2["precio"]) * 3
     assert data["total"] == pytest.approx(esperado)
-    assert _sin_identidad_de_proveedor(r.json())
+    # Transparencia post-pedido (2026-09-04): con el pedido ENVIADO, cada
+    # orden revela la razón social real; el UUID sigue sin exponerse.
+    nombres = sorted(o["proveedor_nombre"] for o in data["ordenes"])
+    assert all(any(n.startswith(rs) for rs in RAZONES_SOCIALES) for n in nombres)
+    assert _sin_uuid_de_proveedor(r.json())
 
     # El precio quedó congelado (snapshot) en los ítems.
     db = get_service_client()
@@ -162,15 +177,21 @@ def test_crear_pedido_cantidad_invalida(client, headers_farmacia1):
 # Mis pedidos (f5, f6): scoping, anonimato y ciclo de vida
 # --------------------------------------------------------------------------- #
 
-def test_listar_pedidos_anonimo(client, headers_farmacia1):
+def test_listar_pedidos_con_proveedor_visible(client, headers_farmacia1):
+    """Post-pedido la farmacia ve la razón social (transparencia 2026-09-04),
+    conserva el alias como referencia, y el UUID de la org nunca viaja."""
     r = client.get("/v1/farmacia/pedidos", headers=headers_farmacia1)
     assert r.status_code == 200
     codigos = [p["codigo"] for p in r.json()["data"]]
     assert "ORD-0001" in codigos  # las semilla son de farmacia1
-    assert _sin_identidad_de_proveedor(r.json())
-    # total_solicitado se calcula sobre los ítems.
+    assert _sin_uuid_de_proveedor(r.json())
     p1 = next(p for p in r.json()["data"] if p["codigo"] == "ORD-0001")
+    # total_solicitado se calcula sobre los ítems.
     assert p1["total_solicitado"] > 0
+    assert p1["proveedor_nombre"] and any(
+        p1["proveedor_nombre"].startswith(rs) for rs in RAZONES_SOCIALES
+    )
+    assert p1["proveedor_alias"].startswith("Proveedor ")
 
 
 def test_detalle_pedido_ajeno_404(client, headers_farmacia1):

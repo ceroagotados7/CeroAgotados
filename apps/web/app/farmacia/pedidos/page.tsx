@@ -8,7 +8,7 @@ import { AppBar, refrescarBadge } from "@/components/shell";
 import { Avatar, Badge, Card, Chip, EmptyState, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
 import { faltantesDeOrden } from "@/lib/faltantes";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, miles } from "@/lib/format";
+import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
 import type { PedidoFarmacia } from "@/lib/types";
 
 type Filtro = "activos" | "entregados" | "todos";
@@ -90,12 +90,17 @@ export default function MisPedidosPage() {
                 <Link key={p.id} href={`/farmacia/pedidos/${p.id}`} className="block">
                   <Card className="p-3.5">
                     <div className="flex items-center gap-3">
+                      {/* Pedido enviado → proveedor con nombre y apellido
+                          (transparencia para reclamos, 2026-09-04). */}
                       <Avatar className="h-10 w-10 bg-teal-600 text-[12px]">
-                        {p.proveedor_alias.replace("Proveedor ", "").slice(0, 2)}
+                        {p.proveedor_nombre
+                          ? iniciales(p.proveedor_nombre)
+                          : p.proveedor_alias.replace("Proveedor ", "").slice(0, 2)}
                       </Avatar>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[14px] font-semibold leading-tight">
-                          {p.proveedor_alias} <span className="font-normal text-muted">· #{p.codigo}</span>
+                        <p className="truncate text-[14px] font-semibold leading-tight">
+                          {p.proveedor_nombre ?? p.proveedor_alias}{" "}
+                          <span className="font-normal text-muted">· #{p.codigo}</span>
                         </p>
                         <p className="mt-0.5 text-[12px] text-muted">{hace(p.created_at)}</p>
                       </div>
