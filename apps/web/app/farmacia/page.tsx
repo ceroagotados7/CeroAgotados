@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { BannerVerificacion } from "@/components/banner-verificacion";
+import { IdentidadProducto } from "@/components/producto-identidad";
 import { ScrollInfinito } from "@/components/scroll-infinito";
 import { AppBar } from "@/components/shell";
 import { Card, Chip, EmptyState, SearchBar, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cartTotal, useCart } from "@/lib/cart";
 import { cop } from "@/lib/format";
+import { tituloProducto } from "@/lib/producto";
 import { useMe } from "@/lib/me";
 import type { PedidoFarmacia, ProductoBusqueda } from "@/lib/types";
 
@@ -73,7 +75,9 @@ export default function BuscarPage() {
             const prev = conteo.get(it.producto.id);
             conteo.set(it.producto.id, {
               producto_id: it.producto.id,
-              nombre: it.producto.nombre,
+              // Con concentración: el chip "Torrox" a secas no dice si es el de
+              // 60, 90 o 120 mg, y recomprar el equivocado cuesta plata.
+              nombre: tituloProducto(it.producto),
               veces: (prev?.veces ?? 0) + 1,
             });
           }
@@ -196,9 +200,6 @@ export default function BuscarPage() {
         ) : (
           <div className="space-y-2.5">
             {visibles.map((p) => {
-              const detalle = [p.forma_farmaceutica, p.presentacion, p.laboratorio]
-                .filter(Boolean)
-                .join(" · ");
               return (
                 <Link key={p.id} href={`/farmacia/comparar/${p.id}`} className="block">
                   <Card className="p-3.5">
@@ -206,28 +207,35 @@ export default function BuscarPage() {
                       <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-primary-50 text-primary-700">
                         <Pill size={20} />
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[14.5px] font-semibold leading-tight">{p.nombre}</p>
-                        {detalle && <p className="mt-0.5 truncate text-[12px] text-muted">{detalle}</p>}
-                      </div>
-                      {p.categoria && (
-                        <span className="flex-none rounded-md bg-canvas px-2 py-1 text-[10.5px] font-medium text-muted">
-                          {p.categoria}
-                        </span>
-                      )}
+                      {/* Con molécula: la farmacia busca equivalentes, no solo marcas.
+                          La categoría YA NO comparte esta fila: era un chip
+                          flex-none sin truncar y, como el 49% del maestro tiene
+                          categorías de más de 30 caracteres (hasta 67), aplastaba
+                          el nombre hasta dejarlo en una letra por línea. Es el
+                          caso Basilox que reportó el equipo. */}
+                      <IdentidadProducto producto={p} className="flex-1" />
                     </div>
-                    <div className="mt-2.5 flex items-center justify-between border-t border-line pt-2.5">
-                      <p className="flex items-center gap-1 text-[12px] text-muted">
-                        <Layers size={12} /> {p.opciones} opcion{p.opciones !== 1 ? "es" : ""} anónima
-                        {p.opciones !== 1 ? "s" : ""}
-                      </p>
-                      <p className="text-[12.5px] text-muted">
-                        desde{" "}
-                        <span className="font-display text-[16px] font-bold text-primary-800">
-                          {cop(p.precio_desde)}
-                        </span>
-                      </p>
-                      <span className="rounded-xl bg-primary px-3.5 py-2 text-[12.5px] font-semibold text-white">
+                    {p.categoria && (
+                      <p className="mt-1.5 truncate text-[11px] text-muted">{p.categoria}</p>
+                    )}
+                    {/* Opciones y precio en una columna, el botón aparte: a 360 px
+                        los tres en una fila con justify-between se apiñaban y el
+                        precio quedaba pegado al botón (visible en la foto del
+                        equipo). Ahora el botón nunca invade el precio. */}
+                    <div className="mt-2.5 flex items-center gap-3 border-t border-line pt-2.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-1 text-[12px] text-muted">
+                          <Layers size={12} /> {p.opciones} opcion{p.opciones !== 1 ? "es" : ""} anónima
+                          {p.opciones !== 1 ? "s" : ""}
+                        </p>
+                        <p className="mt-0.5 text-[12.5px] text-muted">
+                          desde{" "}
+                          <span className="font-display text-[16px] font-bold text-primary-800">
+                            {cop(p.precio_desde)}
+                          </span>
+                        </p>
+                      </div>
+                      <span className="flex-none rounded-xl bg-primary px-4 py-2.5 text-[12.5px] font-semibold text-white">
                         Comprar
                       </span>
                     </div>

@@ -5,12 +5,14 @@ import { use, useCallback, useEffect, useMemo, useState } from "react";
 
 import { OrdenImprimible } from "@/components/orden-imprimible";
 import { OrdenTimeline } from "@/components/orden-timeline";
+import { IdentidadProducto } from "@/components/producto-identidad";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, IconButton, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { InputMiles } from "@/components/input-miles";
 import { facturaValida, normalizarFactura } from "@/lib/factura";
 import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, fechaHora, hace, iniciales, miles } from "@/lib/format";
+import { tituloProducto } from "@/lib/producto";
 import type { ItemDecision, Oferta, Orden, OrdenItem } from "@/lib/types";
 
 export default function OrdenDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -488,14 +490,9 @@ function ItemEditable({
           <Pill size={18} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-semibold leading-tight">{item.producto?.nombre ?? "Producto"}</p>
-          {/* Laboratorio incluido (auditoría del fundador): en bodega distingue
-              el producto exacto entre marcas homónimas. */}
-          {(item.producto?.presentacion || item.producto?.laboratorio) && (
-            <p className="mt-0.5 truncate text-[11.5px] text-muted">
-              {[item.producto?.presentacion, item.producto?.laboratorio].filter(Boolean).join(" · ")}
-            </p>
-          )}
+          {/* En bodega se alista lo que dice esta línea: sin la concentración,
+              despachar 90 mg en vez de 60 mg es un error caro y silencioso. */}
+          <IdentidadProducto producto={item.producto} size="sm" mostrarMolecula={false} />
           <p className={`mt-0.5 text-[12px] ${disponible ? "text-muted" : "text-danger/90"}`}>
             Pide {miles(item.cantidad_solicitada)} cajas × {cop(item.precio_unitario_snapshot)} · stock restante:{" "}
             <b className={disponible ? "text-primary-700" : ""}>{miles(stock)}</b>
@@ -542,12 +539,17 @@ function ItemEditable({
             >
               <Minus size={14} />
             </button>
+            {/* Sin acotar por tecla: acotar aquí reinyectaba un 1 al borrar y
+                hacía imposible reescribir la cantidad (reporte del equipo).
+                InputMiles acota a [1, solicitado] al salir del campo. */}
             <InputMiles
               id={`cant-${item.id}`}
               value={String(cantidad)}
-              onChange={(d) => onChange(Math.max(1, Math.min(Number(d || 1), maximo)))}
+              onChange={(d) => onChange(Number(d))}
+              min={1}
+              max={maximo}
               className="input w-[64px] flex-none py-2 text-center font-semibold"
-              aria-label={`Cajas a despachar de ${item.producto?.nombre ?? "producto"}`}
+              aria-label={`Cajas a despachar de ${tituloProducto(item.producto ?? {}, "producto")}`}
             />
             <button
               type="button"
@@ -591,10 +593,7 @@ function ResumenLectura({ orden }: { orden: Orden }) {
                 <Pill size={18} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-semibold leading-tight">{it.producto?.nombre ?? "Producto"}</p>
-                {it.producto?.laboratorio && (
-                  <p className="mt-0.5 truncate text-[11.5px] text-muted">{it.producto.laboratorio}</p>
-                )}
+                <IdentidadProducto producto={it.producto} size="sm" mostrarMolecula={false} />
                 <p className="mt-0.5 text-[12px] text-muted">
                   {aceptado ? `${miles(it.cantidad_aceptada)} cajas` : "No despachado"} × {cop(it.precio_unitario_snapshot)}
                 </p>

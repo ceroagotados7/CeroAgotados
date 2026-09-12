@@ -18,6 +18,16 @@ export function soloDigitos(s: string): string {
   return s.replace(/\D+/g, "");
 }
 
+/** Acota un valor al rango permitido. Vive aquí (y no en el componente) para
+ *  poder probarla sola: es la regla que decide qué número queda en la casilla
+ *  cuando el usuario sale del campo. */
+export function acotar(n: number, min?: number, max?: number): number {
+  let v = Number.isFinite(n) ? n : (min ?? 0);
+  if (max != null && v > max) v = max;
+  if (min != null && v < min) v = min;
+  return v;
+}
+
 /** Valor de un input numérico mientras se escribe: dígitos → "1.250.000" ("" si no hay). */
 export function milesInput(s: string): string {
   const digits = soloDigitos(s);

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { InputMiles } from "@/components/input-miles";
+import { IdentidadProducto } from "@/components/producto-identidad";
 import { ScrollInfinito } from "@/components/scroll-infinito";
 import { BackBar } from "@/components/shell";
 import { Button, SearchBar, Spinner } from "@/components/ui";
@@ -200,7 +201,6 @@ export default function AgregarPage() {
           <div className="space-y-2.5">
             {resultados.map((p) => {
               const elegido = sel[p.id];
-              const presentacion = [p.forma_farmaceutica, p.presentacion].filter(Boolean).join(" · ");
               if (elegido) {
                 return (
                   <div key={p.id} className="card-flat border-primary bg-primary-50/40 p-3.5">
@@ -208,14 +208,12 @@ export default function AgregarPage() {
                       <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-md bg-primary text-white">
                         <Check size={15} />
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[14.5px] font-semibold leading-tight">{p.nombre}</p>
-                        {/* Presentación y LABORATORIO se conservan al seleccionar
-                            (feedback del fundador: antes desaparecían). */}
-                        <p className="mt-0.5 text-[12px] text-muted">
-                          {[presentacion, p.laboratorio].filter(Boolean).join(" · ")}
-                        </p>
-                      </div>
+                      {/* EXACTAMENTE la misma identidad que en la card sin
+                          seleccionar. El equipo reportó dos veces que al señalar
+                          el artículo se perdía información: el laboratorio
+                          (10-sep) y los miligramos de Torrox 60/90 (11-sep).
+                          Con el componente compartido ya no puede divergir. */}
+                      <IdentidadProducto producto={p} className="flex-1" />
                     </button>
                     <div className="mt-3 space-y-3 border-t border-primary-100 pt-3">
                       <div className="grid grid-cols-2 gap-2">
@@ -255,19 +253,9 @@ export default function AgregarPage() {
                   className="card-flat flex w-full items-start gap-3 p-3.5 text-left"
                 >
                   <span className="mt-0.5 h-6 w-6 flex-none rounded-md border-2 border-slate-300" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14.5px] font-semibold leading-tight">{p.nombre}</p>
-                    {/* El principio activo distingue marcas homónimas: con el maestro
-                        real hay decenas de "Funzal"-como-marca por molécula. */}
-                    {p.principio_activo && (
-                      <p className="mt-0.5 text-[12px] font-medium text-slate-600">
-                        {[p.principio_activo, p.concentracion].filter(Boolean).join(" · ")}
-                      </p>
-                    )}
-                    <p className="mt-0.5 text-[12px] text-muted">
-                      {[presentacion, p.laboratorio].filter(Boolean).join(" · ")}
-                    </p>
-                  </div>
+                  {/* El principio activo distingue marcas homónimas: con el maestro
+                      real hay decenas de "Funzal"-como-marca por molécula. */}
+                  <IdentidadProducto producto={p} className="flex-1" />
                 </button>
               );
             })}

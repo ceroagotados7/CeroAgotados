@@ -5,11 +5,13 @@ import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 
 import { OrdenTimeline } from "@/components/orden-timeline";
+import { IdentidadProducto } from "@/components/producto-identidad";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { cajas, faltantesDeOrden } from "@/lib/faltantes";
 import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
+import { tituloProducto } from "@/lib/producto";
 import type { PedidoFarmacia } from "@/lib/types";
 
 const ESTADO_ITEM_LABEL: Record<string, string> = {
@@ -167,15 +169,14 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
               <div key={i.id} className="p-3.5">
                 <div className="flex items-center gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className={`text-[13.5px] font-semibold leading-tight ${rechazado ? "text-muted line-through" : ""}`}>
-                      {i.producto?.nombre ?? "Producto"}
-                    </p>
-                    {/* Laboratorio incluido (auditoría del fundador). */}
-                    {(i.producto?.presentacion || i.producto?.laboratorio) && (
-                      <p className="mt-0.5 truncate text-[11.5px] text-muted">
-                        {[i.producto?.presentacion, i.producto?.laboratorio].filter(Boolean).join(" · ")}
-                      </p>
-                    )}
+                    {/* Con concentración: si el proveedor no aceptó el de 90 mg,
+                        la farmacia tiene que ver cuál fue exactamente. */}
+                    <IdentidadProducto
+                      producto={i.producto}
+                      size="sm"
+                      mostrarMolecula={false}
+                      tituloClassName={rechazado ? "text-muted line-through" : undefined}
+                    />
                     <p className="mt-0.5 text-[12px] text-muted">
                       {miles(cantidad)} caja{cantidad !== 1 && "s"} × {cop(i.precio_unitario_snapshot)}
                       {gestionado && i.estado_item === "aceptado" && i.cantidad_aceptada < i.cantidad_solicitada && (
@@ -203,7 +204,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                   >
                     <Search size={14} />
                     {rechazado
-                      ? `Buscar otras opciones de ${i.producto?.nombre ?? "este producto"}`
+                      ? `Buscar otras opciones de ${tituloProducto(i.producto ?? {}, "este producto")}`
                       : `Pedir ${cajas(faltantePorItem.get(i.id)!.faltan)} faltante${faltantePorItem.get(i.id)!.faltan !== 1 ? "s" : ""} a otro proveedor`}
                   </Link>
                 )}

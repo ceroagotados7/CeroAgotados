@@ -57,7 +57,9 @@ def test_buscar_solo_con_opciones_y_sin_identidad(client, headers_farmacia1):
     assert r.status_code == 200, r.text
     data = r.json()["data"]
     assert data, "Acetaminofén tiene ofertas en el seed"
-    p = next(d for d in data if d["nombre"] == "Acetaminofén 500mg")
+    # En el maestro real el nombre NO identifica: hay decenas de "Acetaminofén"
+    # de distinta concentración y laboratorio. Se ancla por concentración.
+    p = next(d for d in data if d["nombre"] == "Acetaminofén" and d["concentracion"] == "500 mg")
     assert p["opciones"] >= 2  # ambos proveedores lo ofertan
     assert p["precio_desde"] > 0
     assert _sin_identidad_de_proveedor(r.json())

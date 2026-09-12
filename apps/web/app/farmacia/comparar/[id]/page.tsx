@@ -10,6 +10,7 @@ import { Avatar, Badge, Button, Card, EmptyState, Spinner } from "@/components/u
 import { api } from "@/lib/api";
 import { addToCart, useCart } from "@/lib/cart";
 import { cop, miles } from "@/lib/format";
+import { detalleProducto, moleculaProducto, tituloProducto } from "@/lib/producto";
 import type { CompararResult } from "@/lib/types";
 
 export default function CompararPage({ params }: { params: Promise<{ id: string }> }) {
@@ -46,11 +47,11 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
   if (error) return <p className="px-5 pt-4 text-danger">No se pudo cargar el producto.</p>;
   if (!data) return <Spinner />;
 
-  const presentacion = [data.producto.forma_farmaceutica, data.producto.presentacion]
-    .filter(Boolean)
-    .join(" · ");
-  // El laboratorio identifica el producto exacto (auditoría del fundador).
-  const detalleProducto = [presentacion, data.producto.laboratorio].filter(Boolean).join(" · ");
+  // Título con concentración: comparando precios de "Torrox" a secas no se sabe
+  // si son los de 60, 90 o 120 mg, y todos existen en el maestro.
+  const titulo = tituloProducto(data.producto);
+  const molecula = moleculaProducto(data.producto);
+  const detalle = detalleProducto(data.producto);
   const enCarrito = new Set(cart.map((i) => i.oferta_id));
 
   function toggle(ofertaId: string, stock: number) {
@@ -73,11 +74,17 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
         oferta_id: o.oferta_id,
         producto_id: data.producto.id,
         nombre: data.producto.nombre,
-        presentacion,
+        // Campos por separado, no la línea ya armada: el carrito los vuelve a
+        // componer con las mismas reglas que el resto de la app.
+        presentacion: data.producto.presentacion ?? "",
         proveedor_alias: o.proveedor_alias,
         precio: o.precio,
         stock: o.stock_disponible,
         laboratorio: data.producto.laboratorio ?? null,
+        // El carrito guarda la identidad completa: al revisar el pedido hay que
+        // poder distinguir dos concentraciones del mismo producto.
+        concentracion: data.producto.concentracion ?? null,
+        forma_farmaceutica: data.producto.forma_farmaceutica ?? null,
         cantidad: Math.min(sel[o.oferta_id] ?? 1, o.stock_disponible),
       });
     }
@@ -86,10 +93,14 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
 
   return (
     <>
-      <BackBar title={data.producto.nombre} subtitle="Comprar al mejor precio" backHref="/farmacia" />
+      <BackBar title={titulo} subtitle="Comprar al mejor precio" backHref="/farmacia" />
 
       <div className="px-5 pb-44">
-        {detalleProducto && <p className="mb-3 px-1 text-[12.5px] text-muted">{detalleProducto}</p>}
+        {(molecula || detalle) && (
+          <p className="mb-3 px-1 text-[12.5px] text-muted">
+            {[molecula, detalle].filter(Boolean).join(" · ")}
+          </p>
+        )}
 
         {/* Stats (f2): opciones · más bajo · promedio. Sin identidad de proveedor. */}
         {data.opciones_total > 0 && (
@@ -172,9 +183,9 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
                         <InputMiles
                           id={`cant-${o.oferta_id}`}
                           value={cantidad > 0 ? String(cantidad) : ""}
-                          onChange={(d) =>
-                            setSel((s) => ({ ...s, [o.oferta_id]: Number(d || 0) }))
-                          }
+                          onChange={(d) => setSel((s) => ({ ...s, [o.oferta_id]: Number(d) }))}
+                          min={1}
+                          max={o.stock_disponible}
                           className="input flex-1 font-semibold"
                         />
                         {[10, 50, 100].map((n) => (

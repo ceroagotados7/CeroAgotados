@@ -15,8 +15,29 @@ ORG_PROVEEDOR1 = "0000000a-0000-0000-0000-000000000001"
 ORDENES_SEED = ["ORD-0001", "ORD-0002"]
 
 
-def _producto_id(nombre: str) -> str:
-    res = get_service_client().table("producto_maestro").select("id").eq("nombre", nombre).single().execute()
+# Productos del seed, anclados por `fuente_ref` (llave unica de la carga del
+# maestro real). Antes se buscaban por nombre, pero en el catalogo real un mismo
+# nombre se repite decenas de veces (Torrox 60/90/120 mg, Amoxicilina de seis
+# laboratorios): el nombre dejo de ser identificador.
+REF_ACETAMINOFEN = "55073"   # Acetaminofen 500 mg x100 - La Sante (esta en ORD-0001)
+REF_CETIRIZINA = "13000"     # Cetirizina 10 mg - el proveedor1 NO la oferta en el seed
+REF_CEFALEXINA = "102545"    # Cefalexina 500 mg - usado como sustituto
+REF_IBUPROFENO = "100317"    # Ibuprofeno 800 mg - ORD-0001, se acepta parcial
+REF_AMOXICILINA = "49325"    # Amoxicilina 500 mg - ORD-0001, se rechaza
+REF_OMEPRAZOL = "100164"     # Omeprazol - la unica oferta del seed SIN stock
+REF_LORATADINA = "109609"    # Loratadina 10 mg - ORD-0002
+
+
+def _producto_id(ref: str) -> str:
+    res = (
+        get_service_client()
+        .table("producto_maestro")
+        .select("id")
+        .eq("fuente", "farmalium")
+        .eq("fuente_ref", ref)
+        .single()
+        .execute()
+    )
     return res.data["id"]
 
 
@@ -65,9 +86,10 @@ def test_catalogo_excluye_ofertados(client, headers_proveedor1):
     """Por defecto (p3), el catálogo maestro NO muestra lo que el proveedor ya oferta."""
     r = client.get("/v1/catalogo/", params={"q": "ibupro"}, headers=headers_proveedor1)
     assert r.status_code == 200
-    # proveedor1 ya oferta Ibuprofeno 400mg → no debe aparecer para agregar.
-    nombres = [p["nombre"] for p in r.json()["data"]]
-    assert "Ibuprofeno 400mg" not in nombres
+    # proveedor1 ya oferta ese Ibuprofeno exacto → no debe aparecer para agregar.
+    # Se compara por id: en el maestro real hay muchos "Ibuprofeno" distintos.
+    ids = [p["id"] for p in r.json()["data"]]
+    assert _producto_id(REF_IBUPROFENO) not in ids
 
 
 def test_catalogo_no_filtra_precios_de_competencia(client, headers_proveedor2):
@@ -92,7 +114,7 @@ def test_dashboard_proveedor(client, headers_proveedor1):
     r = client.get("/v1/dashboard/", headers=headers_proveedor1)
     assert r.status_code == 200
     data = r.json()["data"]
-    # El seed deja 2 órdenes pendientes y 1 oferta sin stock (Ciprofloxacino).
+    # El seed deja 2 órdenes pendientes y 1 oferta sin stock (Omeprazol).
     assert data["ordenes_pendientes"] >= 2
     assert data["productos_sin_stock"] >= 1
     assert data["medicamentos_activos"] >= 1
@@ -116,7 +138,7 @@ def test_me(client, headers_proveedor1):
 
 def test_crear_y_actualizar_oferta_con_historial(client, headers_proveedor1):
     db = get_service_client()
-    prod = _producto_id("Cetirizina 10mg")  # el proveedor1 no la ofrece en el seed
+    prod = _producto_id(REF_CETIRIZINA)  # el proveedor1 no la ofrece en el seed
     # Limpieza previa por si una corrida anterior la dejó.
     db.table("ofertas").delete().eq("organizacion_id", ORG_PROVEEDOR1).eq("producto_maestro_id", prod).execute()
 
@@ -214,18 +236,18 @@ def test_precio_congelado_en_orden(client, headers_proveedor1):
     db = get_service_client()
     ord_id = _orden_id("ORD-0001")
 
+    prod = _producto_id(REF_ACETAMINOFEN)
     detalle = client.get(f"/v1/ordenes/{ord_id}", headers=headers_proveedor1).json()["data"]
-    item_acet = next(i for i in detalle["items"] if i["producto"]["nombre"] == "Acetaminofén 500mg")
+    item_acet = next(i for i in detalle["items"] if i["producto_maestro_id"] == prod)
     snapshot = float(item_acet["precio_unitario_snapshot"])
 
     # Subir el precio de la oferta de Acetaminofén del proveedor1.
-    prod = _producto_id("Acetaminofén 500mg")
     db.table("ofertas").update({"precio": 99999}).eq("organizacion_id", ORG_PROVEEDOR1).eq(
         "producto_maestro_id", prod
     ).execute()
 
     detalle2 = client.get(f"/v1/ordenes/{ord_id}", headers=headers_proveedor1).json()["data"]
-    item2 = next(i for i in detalle2["items"] if i["producto"]["nombre"] == "Acetaminofén 500mg")
+    item2 = next(i for i in detalle2["items"] if i["producto_maestro_id"] == prod)
     assert float(item2["precio_unitario_snapshot"]) == snapshot  # NO cambió
 
     # Restaurar.
@@ -237,11 +259,11 @@ def test_precio_congelado_en_orden(client, headers_proveedor1):
 def test_aceptacion_parcial(client, headers_proveedor1):
     ord_id = _orden_id("ORD-0001")
     detalle = client.get(f"/v1/ordenes/{ord_id}", headers=headers_proveedor1).json()["data"]
-    items = {i["producto"]["nombre"]: i for i in detalle["items"]}
+    items = {i["producto_maestro_id"]: i for i in detalle["items"]}
 
-    acet = items["Acetaminofén 500mg"]      # aceptar completo
-    ibup = items["Ibuprofeno 400mg"]        # aceptar parcial (mitad)
-    amox = items["Amoxicilina 500mg"]       # rechazar
+    acet = items[_producto_id(REF_ACETAMINOFEN)]   # aceptar completo
+    ibup = items[_producto_id(REF_IBUPROFENO)]     # aceptar parcial (mitad)
+    amox = items[_producto_id(REF_AMOXICILINA)]    # rechazar
 
     decisiones = [
         {"item_id": acet["id"], "estado": "aceptado", "cantidad_aceptada": acet["cantidad_solicitada"]},
@@ -263,12 +285,12 @@ def test_aceptacion_parcial(client, headers_proveedor1):
 def test_sustitucion_por_falta_de_stock(client, headers_proveedor1):
     ord_id = _orden_id("ORD-0002")
     detalle = client.get(f"/v1/ordenes/{ord_id}", headers=headers_proveedor1).json()["data"]
-    items = {i["producto"]["nombre"]: i for i in detalle["items"]}
-    cipro = items["Ciprofloxacino 500mg"]   # sin stock -> sustituir
-    lora = items["Loratadina 10mg"]         # aceptar
+    items = {i["producto_maestro_id"]: i for i in detalle["items"]}
+    cipro = items[_producto_id(REF_OMEPRAZOL)]   # sin stock -> sustituir
+    lora = items[_producto_id(REF_LORATADINA)]   # aceptar
 
-    # Sustituir Ciprofloxacino por Cefalexina (otro producto del maestro).
-    sustituto = _producto_id("Cefalexina 500mg")
+    # Sustituir el agotado por Cefalexina (otro producto del maestro).
+    sustituto = _producto_id(REF_CEFALEXINA)
     decisiones = [
         {
             "item_id": cipro["id"],
@@ -329,7 +351,7 @@ def test_sacar_oferta_del_catalogo(client, headers_proveedor1):
 def test_no_sacar_oferta_con_ordenes(client, headers_proveedor1):
     """Una oferta referenciada por una orden NO se borra (FK restrict): 409."""
     db = get_service_client()
-    prod = _producto_id("Acetaminofén 500mg")  # está en ORD-0001 del seed
+    prod = _producto_id(REF_ACETAMINOFEN)  # está en ORD-0001 del seed
     of = (
         db.table("ofertas").select("id").eq("organizacion_id", ORG_PROVEEDOR1).eq("producto_maestro_id", prod).single().execute()
     ).data

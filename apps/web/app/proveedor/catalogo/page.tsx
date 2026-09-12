@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { InputMiles } from "@/components/input-miles";
+import { IdentidadProducto } from "@/components/producto-identidad";
 import { AppBar } from "@/components/shell";
 import { Badge, Button, Card, Chip, EmptyState, IconButton, SearchBar, Spinner, Toggle } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { cop, miles } from "@/lib/format";
+import { identidadProducto } from "@/lib/producto";
 import { useMe } from "@/lib/me";
 import type { Oferta } from "@/lib/types";
 
@@ -56,7 +58,10 @@ export default function CatalogoPage() {
     const list = ofertas ?? [];
     const term = q.trim().toLowerCase();
     const filtrados = list.filter((o) => {
-      const matchQ = !term || (o.producto?.nombre ?? "").toLowerCase().includes(term);
+      // Busca sobre la identidad completa, no solo el nombre: con varias
+      // concentraciones del mismo producto, "150" o el laboratorio son la
+      // forma natural de encontrar la línea correcta del inventario.
+      const matchQ = !term || identidadProducto(o.producto ?? {}, "").toLowerCase().includes(term);
       const matchF =
         filtro === "todos" ||
         (filtro === "activos" && o.activo && o.stock_disponible > 0) ||
@@ -81,7 +86,12 @@ export default function CatalogoPage() {
       </AppBar>
 
       <div className="px-5">
-        <SearchBar value={q} onChange={setQ} placeholder="Buscar en mis medicamentos…" className="mb-3" />
+        <SearchBar
+          value={q}
+          onChange={setQ}
+          placeholder="Nombre, concentración o laboratorio…"
+          className="mb-3"
+        />
 
         <div className="mb-3 grid grid-cols-2 gap-2.5">
           <Link href="/proveedor/carga-masiva">
@@ -188,15 +198,11 @@ function OfertaCard({ oferta, onReload }: { oferta: Oferta; onReload: () => Prom
         >
           <Pill size={20} />
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[14.5px] font-semibold leading-tight">{oferta.producto?.nombre ?? "Producto"}</p>
-          {/* Laboratorio incluido (auditoría del fundador): identifica el producto exacto. */}
-          <p className="mt-0.5 text-[12px] text-muted">
-            {[oferta.producto?.forma_farmaceutica, oferta.producto?.presentacion, oferta.producto?.laboratorio]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-        </div>
+        {/* Concentración incluida (reporte del equipo, 11-sep: en el inventario
+            principal no aparecían los miligramos de Cindimizol 150 mg).
+            Sin molécula: aquí el proveedor ya eligió el producto y la lista
+            es larga; lo que necesita es identificarlo de un vistazo. */}
+        <IdentidadProducto producto={oferta.producto} className="flex-1" mostrarMolecula={false} />
         {/* El estado ya no se cambia aquí (era un toggle): se muestra como badge y se edita en "Editar". */}
         {pausado ? (
           <Badge tone="gray" className="flex-none">
@@ -301,10 +307,9 @@ function EditCard({
 
   return (
     <Card className="p-3.5">
-      <p className="text-[14.5px] font-semibold leading-tight">{oferta.producto?.nombre ?? "Producto"}</p>
-      {oferta.producto?.laboratorio && (
-        <p className="mt-0.5 text-[12px] text-muted">{oferta.producto.laboratorio}</p>
-      )}
+      {/* Al editar precio/stock hay que ver QUÉ se está editando: antes solo
+          mostraba el laboratorio, sin concentración ni presentación. */}
+      <IdentidadProducto producto={oferta.producto} mostrarMolecula={false} />
       <div className="mt-3 grid grid-cols-2 gap-2">
         <div>
           <label className="label">Precio (caja)</label>

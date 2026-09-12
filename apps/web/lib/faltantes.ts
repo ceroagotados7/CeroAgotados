@@ -4,6 +4,7 @@
 // Lógica pura y testeable: la UI solo pinta lo que esto devuelve.
 
 import { miles } from "./format";
+import { tituloProducto } from "./producto";
 import type { EstadoOrden, OrdenItem } from "./types";
 
 export type Faltante = {
@@ -33,7 +34,7 @@ export function faltantesDeOrden(items: OrdenItem[], estado: EstadoOrden): Falta
       out.push({
         itemId: i.id,
         productoId: i.producto_maestro_id,
-        nombre: i.producto?.nombre ?? "Producto",
+        nombre: tituloProducto(i.producto ?? {}),
         tipo: "sin_stock",
         pedidas,
         aceptadas: 0,
@@ -43,7 +44,7 @@ export function faltantesDeOrden(items: OrdenItem[], estado: EstadoOrden): Falta
       out.push({
         itemId: i.id,
         productoId: i.producto_maestro_id,
-        nombre: i.producto?.nombre ?? "Producto",
+        nombre: tituloProducto(i.producto ?? {}),
         tipo: "parcial",
         pedidas,
         aceptadas,

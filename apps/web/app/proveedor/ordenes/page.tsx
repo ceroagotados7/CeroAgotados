@@ -9,6 +9,7 @@ import { AppBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, CardFlat, Chip, EmptyState, IconButton, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
+import { identidadProducto } from "@/lib/producto";
 import type { ItemDecision, Orden } from "@/lib/types";
 
 type Filtro = "pendientes" | "preparacion" | "despachadas" | "todas";
@@ -181,9 +182,9 @@ function OrdenPendiente({
         {orden.items.map((it) => (
           <div key={it.id} className="flex items-center justify-between gap-2 text-[13.5px]">
             <span className="min-w-0 text-soft">
-              {it.producto?.nombre ?? "Producto"}{" "}
-              {/* Laboratorio incluido (auditoría del fundador). */}
-              {it.producto?.laboratorio && <span className="text-muted">· {it.producto.laboratorio}</span>}{" "}
+              {/* Identidad completa: quien alista el pedido en bodega necesita
+                  la concentración, no solo el nombre y el laboratorio. */}
+              {identidadProducto(it.producto ?? {})}{" "}
               <span className="text-muted">× {miles(it.cantidad_solicitada)} cajas</span>
             </span>
             <span className="flex-none font-semibold">{cop(it.cantidad_solicitada * it.precio_unitario_snapshot)}</span>

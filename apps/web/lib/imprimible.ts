@@ -7,6 +7,7 @@
 // gestionó, se valoriza lo ACEPTADO — que es exactamente lo que va a facturar
 // (un ítem rechazado queda en 0 y no infla el total).
 
+import { presentacionProducto, tituloProducto } from "./producto";
 import type { Orden } from "./types";
 
 export type FilaImprimible = {
@@ -35,10 +36,10 @@ export function valorizarOrden(orden: Orden): OrdenValorizada {
     const cantidad = gestionada ? aceptada : pedida;
     return {
       itemId: i.id,
-      nombre: i.producto?.nombre ?? "Producto",
-      presentacion:
-        [i.producto?.forma_farmaceutica, i.producto?.presentacion].filter(Boolean).join(" · ") ||
-        "—",
+      // Con concentración: la hoja se coteja contra la factura renglón por
+      // renglón, y "Torrox" sin los mg no identifica el renglón.
+      nombre: tituloProducto(i.producto ?? {}),
+      presentacion: presentacionProducto(i.producto ?? {}) || "—",
       laboratorio: i.producto?.laboratorio ?? "—",
       cantidad,
       precioUnitario: i.precio_unitario_snapshot,

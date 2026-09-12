@@ -11,8 +11,11 @@ export type CartItem = {
   producto_id: string;
   nombre: string;
   presentacion: string;
-  /** Opcional: los carritos guardados antes de agregarlo no lo traen. */
+  // Opcionales: los carritos que ya estaban en localStorage antes de añadirlos
+  // no los traen, y deben seguir funcionando (se degradan a lo que tengan).
   laboratorio?: string | null;
+  concentracion?: string | null;
+  forma_farmaceutica?: string | null;
   proveedor_alias: string;
   precio: number;
   stock: number;

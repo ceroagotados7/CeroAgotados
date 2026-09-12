@@ -1,8 +1,11 @@
 -- Cero Agotados — datos semilla para desarrollo LOCAL
 -- ===================================================
 -- Se corre con cada `supabase db reset`. Crea usuarios de prueba, organizaciones,
--- catálogo maestro, ofertas y algunas órdenes dirigidas al "Proveedor 1" para
--- poder probar el flujo completo del proveedor (p4-ordenes, p6-orden-detalle).
+-- ofertas y algunas órdenes dirigidas al "Proveedor 1" para poder probar el
+-- flujo completo del proveedor (p4-ordenes, p6-orden-detalle).
+--
+-- NO crea medicamentos: los toma del catálogo maestro REAL por `fuente_ref`
+-- (ver la sección de catálogo más abajo). Requiere el maestro ya cargado.
 --
 -- Usuarios de prueba (password para todos: "password123"):
 --   admin@cero.test        · admin de plataforma
@@ -53,67 +56,73 @@ values
   ('0000000d-0000-0000-0000-000000000002', '0000000a-0000-0000-0000-000000000002', 'owner'),
   ('0000000e-0000-0000-0000-000000000001', '0000000b-0000-0000-0000-000000000001', 'owner');
 
--- ---------- Catálogo maestro (24 medicamentos) ----------
-insert into public.producto_maestro (nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria) values
-  ('Acetaminofén 500mg',        'Acetaminofén',   '500mg',       'Tableta',  'Caja x 100 tabletas', 'Genfar',       'Analgésico'),
-  ('Ibuprofeno 400mg',          'Ibuprofeno',     '400mg',       'Tableta',  'Caja x 50 tabletas',  'MK',           'Analgésico'),
-  ('Naproxeno 250mg',           'Naproxeno',      '250mg',       'Tableta',  'Caja x 30 tabletas',  'Genfar',       'Analgésico'),
-  ('Aspirina 100mg',            'Ácido acetilsalicílico', '100mg', 'Tableta', 'Caja x 30 tabletas', 'Bayer',       'Analgésico'),
-  ('Amoxicilina 500mg',         'Amoxicilina',    '500mg',       'Cápsula',  'Caja x 20 cápsulas',  'La Santé',     'Antibiótico'),
-  ('Azitromicina 500mg',        'Azitromicina',   '500mg',       'Tableta',  'Caja x 3 tabletas',   'MK',           'Antibiótico'),
-  ('Cefalexina 500mg',          'Cefalexina',     '500mg',       'Cápsula',  'Caja x 12 cápsulas',  'Genfar',       'Antibiótico'),
-  ('Ciprofloxacino 500mg',      'Ciprofloxacino', '500mg',       'Tableta',  'Caja x 10 tabletas',  'La Santé',     'Antibiótico'),
-  ('Loratadina 10mg',           'Loratadina',     '10mg',        'Tableta',  'Caja x 10 tabletas',  'MK',           'Antihistamínico'),
-  ('Cetirizina 10mg',           'Cetirizina',     '10mg',        'Tableta',  'Caja x 10 tabletas',  'Genfar',       'Antihistamínico'),
-  ('Omeprazol 20mg',            'Omeprazol',      '20mg',        'Cápsula',  'Caja x 14 cápsulas',  'MK',           'Gastrointestinal'),
-  ('Ranitidina 150mg',          'Ranitidina',     '150mg',       'Tableta',  'Caja x 20 tabletas',  'Genfar',       'Gastrointestinal'),
-  ('Metformina 850mg',          'Metformina',     '850mg',       'Tableta',  'Caja x 30 tabletas',  'La Santé',     'Antidiabético'),
-  ('Losartán 50mg',             'Losartán',       '50mg',        'Tableta',  'Caja x 30 tabletas',  'MK',           'Antihipertensivo'),
-  ('Enalapril 20mg',            'Enalapril',      '20mg',        'Tableta',  'Caja x 30 tabletas',  'Genfar',       'Antihipertensivo'),
-  ('Atorvastatina 20mg',        'Atorvastatina',  '20mg',        'Tableta',  'Caja x 30 tabletas',  'La Santé',     'Hipolipemiante'),
-  ('Salbutamol inhalador',      'Salbutamol',     '100mcg/dosis','Inhalador','Frasco x 200 dosis',  'MK',           'Respiratorio'),
-  ('Prednisolona 5mg',          'Prednisolona',   '5mg',         'Tableta',  'Caja x 30 tabletas',  'Genfar',       'Corticoide'),
-  ('Diclofenaco 50mg',          'Diclofenaco',    '50mg',        'Tableta',  'Caja x 30 tabletas',  'MK',           'Antiinflamatorio'),
-  ('Acetaminofén jarabe',       'Acetaminofén',   '150mg/5ml',   'Jarabe',   'Frasco x 120ml',      'Genfar',       'Analgésico'),
-  ('Amoxicilina suspensión',    'Amoxicilina',    '250mg/5ml',   'Suspensión','Frasco x 60ml',      'La Santé',     'Antibiótico'),
-  ('Hidróxido de aluminio',     'Hidróxido de aluminio', '320mg/5ml','Suspensión','Frasco x 150ml', 'MK',          'Gastrointestinal'),
-  ('Vitamina C 500mg',          'Ácido ascórbico','500mg',       'Tableta',  'Caja x 30 tabletas',  'Genfar',       'Vitamina'),
-  ('Complejo B',                'Vitaminas del complejo B', 'N/A','Tableta',  'Caja x 30 tabletas',  'MK',           'Vitamina');
+
+-- ---------- Catálogo: PRODUCTOS REALES del maestro ----------
+-- Antes este seed INVENTABA 24 medicamentos ("Omeprazol 20mg" de MK, etc.).
+-- Decisión del fundador (2026-09-11): en una plataforma farmacéutica no puede
+-- existir un medicamento inventado, ni siquiera como dato de prueba. El seed
+-- ahora SELECCIONA productos reales del catálogo maestro (Farmalium + CUM
+-- INVIMA) por `fuente_ref`, que es la llave única y estable de la carga.
+--
+-- No se eligieron al azar: cada uno ejercita algo que el equipo reportó roto.
+--
+--   53228/53231/53229  Torrox 90/60/120 mg — la concentración NO está en el
+--                      nombre; es el caso exacto del reporte del 11-sep.
+--   23771              Cindimizol 150 mg — el caso del inventario del proveedor.
+--   34894 / 43393      Aircys y Airmax — categoría de 67 caracteres y forma
+--                      farmacéutica larguísima: el caso "información tapada".
+--   55073              Acetaminofén 500 mg — nombre IGUAL a la molécula, para
+--                      que el bloque de identidad no la repita.
+--   100164             Omeprazol — se deja en stock 0 para probar sustitución.
+--   13000              Cetirizina — deliberadamente NO ofertada por Proveedor 1.
+--
+-- REQUISITO: el catálogo maestro debe estar cargado antes de correr este seed.
+do $$
+begin
+  if (select count(*) from public.producto_maestro where fuente = 'farmalium') = 0 then
+    raise exception 'Catálogo maestro vacío: carga el maestro real antes del seed.';
+  end if;
+end $$;
+
+create temporary table _seed_prod (ref text primary key, id uuid);
+insert into _seed_prod (ref, id)
+select v.ref, pm.id
+from (values
+  ('53228'), ('53231'), ('53229'), ('23771'), ('55073'), ('345'),
+  ('34894'), ('43393'), ('49325'), ('107701'), ('101720'), ('102545'),
+  ('13000'), ('100317'), ('109609'), ('102317'), ('100329'), ('100164')
+) as v(ref)
+join public.producto_maestro pm on pm.fuente = 'farmalium' and pm.fuente_ref = v.ref;
 
 -- ---------- Ofertas de cada proveedor (precio + stock) ----------
--- Proveedor 1: amplio catálogo, precios competitivos.
+-- Proveedor 1: catálogo amplio. Omeprazol en 0 (agotado real) y sin Cetirizina.
 insert into public.ofertas (organizacion_id, producto_maestro_id, precio, stock_disponible)
-select '0000000a-0000-0000-0000-000000000001', pm.id, v.precio, v.stock
-from public.producto_maestro pm
-join (values
-  ('Acetaminofén 500mg', 8500, 800), ('Ibuprofeno 400mg', 6200, 500),
-  ('Naproxeno 250mg', 7100, 300), ('Aspirina 100mg', 4300, 400),
-  ('Amoxicilina 500mg', 9800, 250), ('Azitromicina 500mg', 12500, 120),
-  ('Cefalexina 500mg', 8900, 90), ('Ciprofloxacino 500mg', 7600, 0),
-  ('Loratadina 10mg', 3900, 600), ('Cetirizina 10mg', 4100, 550),
-  ('Omeprazol 20mg', 5400, 700), ('Metformina 850mg', 6800, 320),
-  ('Losartán 50mg', 7300, 280), ('Atorvastatina 20mg', 11200, 150),
-  ('Salbutamol inhalador', 18500, 60), ('Diclofenaco 50mg', 5200, 400),
-  ('Acetaminofén jarabe', 6900, 200), ('Vitamina C 500mg', 4800, 500)
-) as v(nombre, precio, stock) on pm.nombre = v.nombre;
+select '0000000a-0000-0000-0000-000000000001', p.id, v.precio, v.stock
+from (values
+  ('53228', 48900, 300), ('53231', 39500, 250), ('53229', 56200, 180),
+  ('23771', 18700, 140), ('55073', 8500, 800), ('345', 6900, 200),
+  ('34894', 23400, 90),  ('43393', 41800, 60),  ('49325', 26500, 220),
+  ('107701', 14300, 150), ('101720', 31200, 110), ('102545', 19800, 130),
+  ('100317', 9600, 400), ('109609', 7400, 500), ('102317', 21500, 260),
+  ('100329', 8800, 350), ('100164', 12900, 0)
+) as v(ref, precio, stock)
+join _seed_prod p on p.ref = v.ref;
 
--- Proveedor 2: catálogo parcial, algunos precios mejores y otros peores.
+-- Proveedor 2: catálogo parcial; algunos precios mejores y otros peores, para
+-- que la comparación de la farmacia tenga de dónde elegir.
 insert into public.ofertas (organizacion_id, producto_maestro_id, precio, stock_disponible)
-select '0000000a-0000-0000-0000-000000000002', pm.id, v.precio, v.stock
-from public.producto_maestro pm
-join (values
-  ('Acetaminofén 500mg', 8100, 600), ('Ibuprofeno 400mg', 6500, 450),
-  ('Amoxicilina 500mg', 9500, 300), ('Azitromicina 500mg', 13100, 80),
-  ('Ciprofloxacino 500mg', 7200, 200), ('Loratadina 10mg', 4200, 400),
-  ('Omeprazol 20mg', 5100, 500), ('Ranitidina 150mg', 4600, 350),
-  ('Metformina 850mg', 7000, 260), ('Enalapril 20mg', 5900, 300),
-  ('Atorvastatina 20mg', 10800, 180), ('Prednisolona 5mg', 6300, 120),
-  ('Diclofenaco 50mg', 5000, 500), ('Complejo B', 3700, 400)
-) as v(nombre, precio, stock) on pm.nombre = v.nombre;
+select '0000000a-0000-0000-0000-000000000002', p.id, v.precio, v.stock
+from (values
+  ('53228', 47200, 200), ('53231', 41000, 160), ('23771', 19500, 100),
+  ('55073', 8100, 600),  ('34894', 22800, 120), ('49325', 27300, 180),
+  ('101720', 30100, 95), ('13000', 5600, 320),  ('100317', 10200, 300),
+  ('109609', 7800, 380), ('102317', 22400, 140), ('100329', 9100, 280)
+) as v(ref, precio, stock)
+join _seed_prod p on p.ref = v.ref;
 
 -- ---------- Órdenes de prueba dirigidas al Proveedor 1 ----------
--- Órdenes que la Farmacia 1 envió al Proveedor 1, en distintos estados para
--- ejercitar p4-ordenes y p6-orden-detalle (incluye aceptación parcial).
+-- Órdenes que la Farmacia 1 envió al Proveedor 1, para ejercitar p4-ordenes y
+-- p6-orden-detalle (incluye aceptación parcial y un ítem sin stock).
 
 -- ORD-0001: pendiente (el proveedor debe revisarla).
 insert into public.ordenes (id, codigo, farmacia_id, proveedor_id, estado, created_by)
@@ -123,13 +132,13 @@ values ('0000000f-0000-0000-0000-000000000001', 'ORD-0001',
 
 insert into public.orden_items (orden_id, oferta_id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada)
 select '0000000f-0000-0000-0000-000000000001', o.id, o.producto_maestro_id, o.precio, v.cant
-from public.ofertas o
-join public.producto_maestro pm on pm.id = o.producto_maestro_id
-join (values ('Acetaminofén 500mg', 20), ('Ibuprofeno 400mg', 15), ('Amoxicilina 500mg', 10)) as v(nombre, cant)
-  on pm.nombre = v.nombre
-where o.organizacion_id = '0000000a-0000-0000-0000-000000000001';
+from (values ('55073', 20), ('100317', 15), ('49325', 10)) as v(ref, cant)
+join _seed_prod p on p.ref = v.ref
+join public.ofertas o on o.producto_maestro_id = p.id
+ and o.organizacion_id = '0000000a-0000-0000-0000-000000000001';
 
--- ORD-0002: pendiente, incluye un ítem SIN stock (Ciprofloxacino) para probar sustitución (f6/p6).
+-- ORD-0002: pendiente, con un ítem SIN stock (Omeprazol) para probar la
+-- sustitución y el faltante (f6/p6).
 insert into public.ordenes (id, codigo, farmacia_id, proveedor_id, estado, created_by)
 values ('0000000f-0000-0000-0000-000000000002', 'ORD-0002',
         '0000000b-0000-0000-0000-000000000001', '0000000a-0000-0000-0000-000000000001',
@@ -137,10 +146,9 @@ values ('0000000f-0000-0000-0000-000000000002', 'ORD-0002',
 
 insert into public.orden_items (orden_id, oferta_id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada)
 select '0000000f-0000-0000-0000-000000000002', o.id, o.producto_maestro_id, o.precio, v.cant
-from public.ofertas o
-join public.producto_maestro pm on pm.id = o.producto_maestro_id
-join (values ('Ciprofloxacino 500mg', 12), ('Loratadina 10mg', 25)) as v(nombre, cant)
-  on pm.nombre = v.nombre
-where o.organizacion_id = '0000000a-0000-0000-0000-000000000001';
+from (values ('100164', 12), ('109609', 25)) as v(ref, cant)
+join _seed_prod p on p.ref = v.ref
+join public.ofertas o on o.producto_maestro_id = p.id
+ and o.organizacion_id = '0000000a-0000-0000-0000-000000000001';
 
 commit;
