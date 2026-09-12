@@ -111,10 +111,15 @@ export default function CompararPage({ params }: { params: Promise<{ id: string 
           </Card>
         )}
 
+        {/* A la farmacia NO se le dice que los proveedores "compiten por precio"
+            (decisión del fundador, 2026-09-11): no es asunto suyo cómo se
+            relacionan los proveedores entre sí, y enmarcarlo como competencia
+            sobra. El aviso de que verá la razón social al enviar ya está en la
+            pantalla de pedido, que es el momento en que importa. Solo queda lo
+            que no se deduce mirando: que puede pedir a varios a la vez. */}
         <p className="mb-2 px-1 text-[12px] text-muted">
-          Ordenado por precio. Los proveedores compiten de forma <b>anónima</b> (verás
-          quién es cada uno al enviar el pedido). Puedes seleccionar <b>varias opciones</b>{" "}
-          y pedir el mismo producto a más de un proveedor.
+          Ordenado por precio. Puedes seleccionar <b>varias opciones</b> y pedir el mismo
+          producto a más de un proveedor.
         </p>
 
         {data.opciones.length === 0 ? (
