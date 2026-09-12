@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  abreviarForma,
   concentracionVisible,
   detalleProducto,
   identidadProducto,
   moleculaProducto,
+  presentacionCompacta,
   presentacionProducto,
   tituloProducto,
 } from "./producto";
@@ -133,5 +135,57 @@ describe("identidadProducto", () => {
   it("funciona con lo mínimo", () => {
     expect(identidadProducto({ nombre: "Suero" })).toBe("Suero");
     expect(identidadProducto({})).toBe("Producto");
+  });
+});
+
+describe("abreviarForma (hoja impresa, Tanda 6)", () => {
+  it("abrevia las formas más comunes del maestro", () => {
+    expect(abreviarForma("Tabletas")).toBe("Tab.");
+    expect(abreviarForma("Cápsulas")).toBe("Cáps.");
+    expect(abreviarForma("Tabletas masticables")).toBe("Tab. mastic.");
+  });
+
+  it("encoge los compuestos palabra por palabra, sin enumerarlos todos", () => {
+    expect(abreviarForma("Suspensión para inhalación")).toBe("Susp. p/ inhal.");
+    expect(abreviarForma("Polvo para reconstituir a suspensión oral")).toBe(
+      "Polvo p/ reconst. a Susp. oral",
+    );
+    expect(abreviarForma("Solución inyectable")).toBe("Sol. iny.");
+  });
+
+  it("deja intacto lo que no tiene abreviatura", () => {
+    expect(abreviarForma("Jarabe")).toBe("Jarabe");
+    expect(abreviarForma("Crema")).toBe("Crema");
+    expect(abreviarForma("Parches transdérmicos")).toBe("Parches transdérmicos");
+  });
+
+  it("tolera tildes, mayúsculas y espacios de más", () => {
+    expect(abreviarForma("  CÁPSULAS  ")).toBe("Cáps.");
+    expect(abreviarForma("capsulas")).toBe("Cáps.");
+  });
+
+  it("no rompe con nada", () => {
+    expect(abreviarForma(null)).toBe("");
+    expect(abreviarForma("")).toBe("");
+    expect(abreviarForma("   ")).toBe("");
+  });
+});
+
+describe("presentacionCompacta", () => {
+  it("abrevia la forma pero conserva la presentación tal cual", () => {
+    expect(
+      presentacionCompacta({ forma_farmaceutica: "Tabletas", presentacion: "100 Und." }),
+    ).toBe("Tab. · 100 Und.");
+  });
+
+  it("NUNCA toca el nombre ni la concentración", () => {
+    const p = { nombre: "Torrox", concentracion: "90 mg", forma_farmaceutica: "Tabletas" };
+    expect(tituloProducto(p)).toBe("Torrox 90 mg");
+  });
+
+  it("con solo uno de los dos, no deja separadores sueltos", () => {
+    expect(presentacionCompacta({ presentacion: "30 Und." })).toBe("30 Und.");
+    expect(presentacionCompacta({ forma_farmaceutica: "Jarabe" })).toBe("Jarabe");
+    expect(presentacionCompacta({})).toBe("");
   });
 });

@@ -103,3 +103,61 @@ export function identidadProducto(
 ): string {
   return unir([tituloProducto(p, fallback), detalleProducto(p)]);
 }
+
+/** Abreviaturas de forma farmacéutica para la HOJA IMPRESA (Tanda 6).
+ *
+ *  Solo se abrevia la FORMA. El nombre, la concentración y el laboratorio se
+ *  imprimen completos: en bodega, confundir 60 con 90 mg o un laboratorio con
+ *  otro cuesta plata, y acabamos de arreglar justo que no se perdieran.
+ *
+ *  Se abrevia por PALABRA, no por frase completa, para que los compuestos
+ *  ("Polvo para reconstituir a suspensión oral") también encojan sin tener que
+ *  enumerar cada combinación del maestro. */
+const ABREVIATURA_FORMA: Record<string, string> = {
+  tableta: "Tab.",
+  tabletas: "Tab.",
+  capsula: "Cáps.",
+  capsulas: "Cáps.",
+  comprimido: "Compr.",
+  comprimidos: "Compr.",
+  masticable: "mastic.",
+  masticables: "mastic.",
+  recubierta: "recub.",
+  recubiertas: "recub.",
+  suspension: "Susp.",
+  solucion: "Sol.",
+  emulsion: "Emul.",
+  inyectable: "iny.",
+  oftalmica: "oftálm.",
+  oftalmico: "oftálm.",
+  otica: "ót.",
+  topica: "tóp.",
+  inhalacion: "inhal.",
+  nebulizacion: "nebul.",
+  liofilizado: "liof.",
+  granulado: "Gran.",
+  unguento: "Ung.",
+  supositorio: "Supos.",
+  supositorios: "Supos.",
+  reconstituir: "reconst.",
+  para: "p/",
+};
+
+/** "Polvo para reconstituir a suspensión oral" → "Polvo p/ reconst. a Susp. oral" */
+export function abreviarForma(forma: string | null | undefined): string {
+  if (!forma) return "";
+  const palabras = forma.trim().split(/\s+/).map((palabra) => {
+    const clave = palabra
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z]/g, "");
+    return ABREVIATURA_FORMA[clave] ?? palabra;
+  });
+  return palabras.join(" ");
+}
+
+/** Identidad compacta para la hoja impresa: forma abreviada + presentación. */
+export function presentacionCompacta(p: ProductoIdentificable): string {
+  return unir([abreviarForma(p.forma_farmaceutica), p.presentacion]);
+}
