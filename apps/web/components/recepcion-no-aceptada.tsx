@@ -46,6 +46,11 @@ export function RecepcionNoAceptada({
   const [alcance, setAlcance] = useState<Alcance>("no_aceptada_total");
   const [porItem, setPorItem] = useState<Record<string, number>>({});
   const [comentario, setComentario] = useState("");
+  // Segundo paso SOLO para el rechazo total (decisión del fundador): marcar el
+  // pedido entero es irreversible y se llega con dos clics, mientras que el
+  // parcial ya obliga a teclear cantidad por cantidad. Mismo criterio que
+  // "Sacar del catálogo", que también pregunta antes.
+  const [confirmando, setConfirmando] = useState(false);
 
   const seleccionados = despachados.filter((i) => (porItem[i.id] ?? 0) > 0);
   const cajas =
@@ -58,6 +63,15 @@ export function RecepcionNoAceptada({
       : seleccionados.reduce((a, i) => a + (porItem[i.id] ?? 0) * i.precio_unitario_snapshot, 0);
 
   const listo = alcance === "no_aceptada_total" || seleccionados.length > 0;
+
+  function intentarRegistrar() {
+    if (!listo || guardando) return;
+    if (alcance === "no_aceptada_total") {
+      setConfirmando(true);
+      return;
+    }
+    confirmar();
+  }
 
   function confirmar() {
     if (!listo || guardando) return;
@@ -96,14 +110,20 @@ export function RecepcionNoAceptada({
       <div className="mb-3 grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => setAlcance("no_aceptada_total")}
+          onClick={() => {
+            setAlcance("no_aceptada_total");
+            setConfirmando(false);
+          }}
           className={`chip justify-center ${alcance === "no_aceptada_total" ? "chip-active" : ""}`}
         >
           No acepté nada
         </button>
         <button
           type="button"
-          onClick={() => setAlcance("no_aceptada_parcial")}
+          onClick={() => {
+            setAlcance("no_aceptada_parcial");
+            setConfirmando(false);
+          }}
           className={`chip justify-center ${alcance === "no_aceptada_parcial" ? "chip-active" : ""}`}
           disabled={despachados.length === 0}
         >
@@ -187,20 +207,52 @@ export function RecepcionNoAceptada({
 
       {error && <p className="mt-2 text-center text-[12.5px] text-danger">{error}</p>}
 
-      <div className="mt-3 flex gap-2">
-        <Button variant="outline" size="md" className="flex-1" onClick={onCancelar} disabled={guardando}>
-          Volver
-        </Button>
-        <Button
-          variant="dark"
-          size="md"
-          className="flex-1"
-          onClick={confirmar}
-          disabled={!listo || guardando}
-        >
-          {guardando ? "Registrando…" : "Registrar"}
-        </Button>
-      </div>
+      {confirmando ? (
+        <div className="mt-3 rounded-xl border border-amber-300 bg-surface p-3.5 text-center">
+          <p className="text-[13.5px] font-semibold leading-snug">
+            ¿Marcar el pedido completo como no aceptado?
+          </p>
+          <p className="mt-1 text-[12.5px] text-muted">
+            Son {miles(cajas)} caja{cajas !== 1 && "s"}
+            {valor > 0 && <> por {cop(valor)}</>}. No se puede deshacer.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button
+              variant="outline"
+              size="md"
+              className="flex-1"
+              onClick={() => setConfirmando(false)}
+              disabled={guardando}
+            >
+              No, volver
+            </Button>
+            <Button
+              variant="dark"
+              size="md"
+              className="flex-1"
+              onClick={confirmar}
+              disabled={guardando}
+            >
+              {guardando ? "Registrando…" : "Sí, no acepté nada"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex gap-2">
+          <Button variant="outline" size="md" className="flex-1" onClick={onCancelar} disabled={guardando}>
+            Volver
+          </Button>
+          <Button
+            variant="dark"
+            size="md"
+            className="flex-1"
+            onClick={intentarRegistrar}
+            disabled={!listo || guardando}
+          >
+            {guardando ? "Registrando…" : "Registrar"}
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }
