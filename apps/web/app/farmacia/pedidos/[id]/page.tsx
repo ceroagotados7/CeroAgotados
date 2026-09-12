@@ -275,10 +275,13 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
             </Button>
             {/* Salida honesta cuando la entrega llegó mal. Va debajo y en tono
                 discreto: lo normal es que el pedido llegue bien. */}
+            {/* py-3, no py-1.5: con el padding anterior el objetivo táctil medía
+                unos 32 px de alto, por debajo de los 44 px que necesita un dedo.
+                Se notó probando en producción — costaba acertarle. */}
             <button
               type="button"
               onClick={() => setAbierto(true)}
-              className="flex w-full items-center justify-center gap-1.5 py-1.5 text-[13px] font-semibold text-amber-700"
+              className="flex min-h-[44px] w-full items-center justify-center gap-1.5 py-3 text-[13px] font-semibold text-amber-700"
             >
               <AlertTriangle size={15} /> No acepté este pedido
             </button>
