@@ -11,7 +11,7 @@ router = APIRouter(prefix="/ordenes", tags=["ordenes"])
 
 _ITEM_PRODUCTO = "producto:producto_maestro!orden_items_producto_maestro_id_fkey(id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria)"
 _FARMACIA = "farmacia:organizaciones!ordenes_farmacia_id_fkey(razon_social, nit, ciudad, direccion)"
-_SELECT = f"*, {_FARMACIA}, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
+_SELECT = f"*, {_FARMACIA}, items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, cantidad_no_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
 
 
 @router.get("/")
@@ -156,5 +156,5 @@ def _map_rpc_error(exc: APIError) -> HTTPException:
     if "estado_no_editable" in msg or "estado_no_despachable" in msg:
         return HTTPException(status.HTTP_409_CONFLICT, msg)
     if "factura_invalida" in msg:
-        return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "factura_invalida")
+        return HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "factura_invalida")
     return HTTPException(status.HTTP_400_BAD_REQUEST, msg or "error_rpc")

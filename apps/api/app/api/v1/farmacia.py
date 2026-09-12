@@ -17,6 +17,7 @@ from app.schemas.farmacia import (
     PedidoCreate,
     PedidoFarmacia,
     ProductoBusqueda,
+    RecepcionRequest,
 )
 from app.schemas.ordenes import OrdenEvento, OrdenItem
 
@@ -27,7 +28,7 @@ _PRODUCTO_COLS = (
     "laboratorio, categoria, tipo, via_administracion, condicion_venta"
 )
 _ITEM_PRODUCTO = "producto:producto_maestro!orden_items_producto_maestro_id_fkey(id, nombre, principio_activo, concentracion, forma_farmaceutica, presentacion, laboratorio, categoria)"
-_PEDIDO_SELECT = f"id, codigo, estado, total, proveedor_id, proveedor_alias, created_at, factura_numero, proveedor:organizaciones!ordenes_proveedor_id_fkey(razon_social), items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
+_PEDIDO_SELECT = f"id, codigo, estado, total, proveedor_id, proveedor_alias, created_at, factura_numero, recepcion, recepcion_comentario, recepcion_at, proveedor:organizaciones!ordenes_proveedor_id_fkey(razon_social), items:orden_items({_ITEM_PRODUCTO}, id, producto_maestro_id, precio_unitario_snapshot, cantidad_solicitada, cantidad_aceptada, cantidad_no_aceptada, estado_item, producto_sustituto_id, oferta_sustituto_id), eventos:orden_eventos(tipo, created_at)"
 
 # Sal del alias anónimo. No es un secreto criptográfico: solo garantiza que el
 # alias no sea derivable del id por un tercero casual.
@@ -345,6 +346,12 @@ def _a_pedido(row: dict) -> PedidoFarmacia:
         proveedor_nombre=(row.get("proveedor") or {}).get("razon_social"),
         created_at=row["created_at"],
         factura_numero=row.get("factura_numero"),
+        # Veredicto de recepción (Tanda 5). Este mapeo es campo por campo a
+        # propósito —filtra lo que no debe salir— así que un campo nuevo hay que
+        # añadirlo aquí además de al SELECT y al schema.
+        recepcion=row.get("recepcion"),
+        recepcion_comentario=row.get("recepcion_comentario"),
+        recepcion_at=row.get("recepcion_at"),
         items=items,
         eventos=eventos,
     )
@@ -399,26 +406,86 @@ def cancelar_pedido(
     return ApiResponse(data=_cargar_pedido(db, orden_id, org_id))
 
 
+# Errores de la RPC de recepción → código HTTP. Todo lo que no esté aquí sale
+# como 400 genérico: nunca se filtra el texto crudo de un error de Postgres.
+_RECEPCION_HTTP: dict[str, int] = {
+    "pedido_no_encontrado": status.HTTP_404_NOT_FOUND,
+    "recepcion_ya_registrada": status.HTTP_409_CONFLICT,
+    "estado_no_recibible": status.HTTP_409_CONFLICT,
+    "alcance_invalido": status.HTTP_422_UNPROCESSABLE_CONTENT,
+    "sin_items": status.HTTP_422_UNPROCESSABLE_CONTENT,
+    "item_ajeno_o_inexistente": status.HTTP_422_UNPROCESSABLE_CONTENT,
+    "item_duplicado": status.HTTP_422_UNPROCESSABLE_CONTENT,
+    "cantidad_invalida": status.HTTP_422_UNPROCESSABLE_CONTENT,
+    "comentario_muy_largo": status.HTTP_422_UNPROCESSABLE_CONTENT,
+}
+
+
+def _registrar_recepcion(
+    db, orden_id: str, org_id: str, user_id: str, payload: RecepcionRequest
+) -> PedidoFarmacia:
+    """Única puerta para cerrar la recepción: aceptada o no aceptada.
+
+    Antes, "confirmar recepción" era un UPDATE suelto —el único camino del ciclo
+    de vida que no pasaba por una RPC con lock—, así que podía pisarse con una
+    corrección de factura del proveedor. Ahora ambos desenlaces entran aquí.
+    """
+    try:
+        db.rpc(
+            "registrar_recepcion",
+            {
+                "p_orden_id": orden_id,
+                "p_farmacia_id": org_id,
+                "p_actor": user_id,
+                "p_alcance": payload.alcance,
+                "p_items": [
+                    {"item_id": i.item_id, "cantidad": i.cantidad} for i in payload.items
+                ],
+                "p_comentario": payload.comentario,
+            },
+        ).execute()
+    except APIError as exc:
+        msg = (exc.message or "") + " " + (getattr(exc, "details", "") or "")
+        for código, http in _RECEPCION_HTTP.items():
+            if código in msg:
+                raise HTTPException(http, código) from exc
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "error_rpc") from exc
+    return _cargar_pedido(db, orden_id, org_id)
+
+
 @router.post("/pedidos/{orden_id}/recibir")
 def recibir_pedido(
     orden_id: str, org_id: PharmacyOrgId, user_id: CurrentUserId, db: SupabaseDep
 ) -> ApiResponse[PedidoFarmacia]:
-    """Marca un pedido despachado como recibido (completada, f6)."""
-    _cargar_pedido(db, orden_id, org_id)
-    res = (
-        db.table("ordenes")
-        .update({"estado": "completada"})
-        .eq("id", orden_id)
-        .eq("farmacia_id", org_id)
-        .eq("estado", "despachada")
-        .execute()
+    """Confirma que el pedido llegó completo y conforme (completada, f6)."""
+    return ApiResponse(
+        data=_registrar_recepcion(
+            db, orden_id, org_id, user_id, RecepcionRequest(alcance="aceptada")
+        )
     )
-    if not res.data:
-        raise HTTPException(status.HTTP_409_CONFLICT, "estado_no_recibible")
-    db.table("orden_eventos").insert(
-        {"orden_id": orden_id, "actor_id": user_id, "tipo": "completada", "payload": {}}
-    ).execute()
-    return ApiResponse(data=_cargar_pedido(db, orden_id, org_id))
+
+
+@router.post("/pedidos/{orden_id}/no-aceptar")
+def no_aceptar_pedido(
+    orden_id: str,
+    payload: RecepcionRequest,
+    org_id: PharmacyOrgId,
+    user_id: CurrentUserId,
+    db: SupabaseDep,
+) -> ApiResponse[PedidoFarmacia]:
+    """La farmacia registra que NO aceptó la entrega, entera o en parte (Tanda 5).
+
+    Queda visible para el distribuidor. NO mueve stock y NO cambia si la venta
+    cuenta: si la farmacia no recibió, el fallo es del distribuidor, no de la
+    plataforma (decisión del fundador, 2026-09-11).
+    """
+    if payload.alcance == "aceptada":
+        # Para eso está /recibir. Aceptar aquí haría que el nombre del endpoint
+        # mintiera sobre lo que quedó registrado.
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "alcance_invalido")
+    return ApiResponse(
+        data=_registrar_recepcion(db, orden_id, org_id, user_id, payload)
+    )
 
 
 def _cargar_pedido(db, orden_id: str, org_id: str) -> PedidoFarmacia:

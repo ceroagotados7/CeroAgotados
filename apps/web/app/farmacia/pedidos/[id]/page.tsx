@@ -5,6 +5,7 @@ import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 
 import { OrdenTimeline } from "@/components/orden-timeline";
+import { RecepcionNoAceptada } from "@/components/recepcion-no-aceptada";
 import { IdentidadProducto } from "@/components/producto-identidad";
 import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, Spinner } from "@/components/ui";
@@ -25,6 +26,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const [pedido, setPedido] = useState<PedidoFarmacia | null>(null);
   const [busy, setBusy] = useState(false);
+  const [abierto, setAbierto] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
@@ -55,6 +57,28 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
     (acc, i) => acc + i.cantidad_solicitada * i.precio_unitario_snapshot,
     0,
   );
+
+  async function noAceptar(payload: {
+    alcance: string;
+    items: { item_id: string; cantidad: number }[];
+    comentario: string | null;
+  }) {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.post(`/farmacia/pedidos/${id}/no-aceptar`, payload);
+      setAbierto(false);
+      await load();
+    } catch (e) {
+      setError(
+        e instanceof ApiCallError && e.status === 409
+          ? "Este pedido ya tiene registrada su recepción."
+          : "No se pudo registrar. Revisa las cantidades e inténtalo de nuevo.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function accion(path: "cancelar" | "recibir") {
     setBusy(true);
@@ -244,15 +268,55 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
             <XCircle size={16} /> {busy ? "Cancelando…" : "Cancelar pedido"}
           </Button>
         )}
-        {pedido.estado === "despachada" && (
-          <Button size="lg" block disabled={busy} onClick={() => accion("recibir")}>
-            <PackageCheck size={18} /> {busy ? "Confirmando…" : "Confirmar recepción"}
-          </Button>
+        {pedido.estado === "despachada" && !abierto && (
+          <div className="space-y-2">
+            <Button size="lg" block disabled={busy} onClick={() => accion("recibir")}>
+              <PackageCheck size={18} /> {busy ? "Confirmando…" : "Confirmar recepción"}
+            </Button>
+            {/* Salida honesta cuando la entrega llegó mal. Va debajo y en tono
+                discreto: lo normal es que el pedido llegue bien. */}
+            <button
+              type="button"
+              onClick={() => setAbierto(true)}
+              className="flex w-full items-center justify-center gap-1.5 py-1.5 text-[13px] font-semibold text-amber-700"
+            >
+              <AlertTriangle size={15} /> No acepté este pedido
+            </button>
+          </div>
         )}
-        {pedido.estado === "completada" && (
+        {pedido.estado === "despachada" && abierto && (
+          <RecepcionNoAceptada
+            items={pedido.items}
+            guardando={busy}
+            error={error}
+            onCancelar={() => {
+              setAbierto(false);
+              setError(null);
+            }}
+            onConfirmar={noAceptar}
+          />
+        )}
+        {pedido.estado === "completada" && pedido.recepcion === "aceptada" && (
           <p className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-primary">
             <CheckCheck size={16} /> Pedido recibido. ¡Gracias!
           </p>
+        )}
+        {/* Lo registrado queda a la vista: es el reclamo de la farmacia. */}
+        {pedido.recepcion && pedido.recepcion !== "aceptada" && (
+          <Card className="border border-amber-300 bg-amber-50/50 p-3.5">
+            <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-amber-800">
+              <AlertTriangle size={15} />
+              {pedido.recepcion === "no_aceptada_total"
+                ? "No aceptaste este pedido"
+                : "No aceptaste parte de este pedido"}
+            </p>
+            {pedido.recepcion_comentario && (
+              <p className="mt-1.5 text-[12.5px] text-muted">“{pedido.recepcion_comentario}”</p>
+            )}
+            <p className="mt-1.5 text-[11.5px] text-muted">
+              El proveedor ya lo ve. Queda en firme.
+            </p>
+          </Card>
         )}
       </div>
     </>

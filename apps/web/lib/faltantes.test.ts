@@ -10,6 +10,7 @@ function item(over: Partial<OrdenItem>): OrdenItem {
     precio_unitario_snapshot: 1000,
     cantidad_solicitada: 10,
     cantidad_aceptada: 10,
+    cantidad_no_aceptada: 0,
     estado_item: "aceptado",
     producto: { id: "pm-1", nombre: "Acetaminofén 500mg" },
     ...over,

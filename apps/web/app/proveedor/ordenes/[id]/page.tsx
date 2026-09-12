@@ -314,6 +314,43 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
           </>
         )}
 
+        {/* Veredicto de la farmacia al recibir (Tanda 5). Es el punto de la
+            feature: que el distribuidor se entere de que algo llegó mal, qué
+            fue y por qué. Va en ámbar como el resto de las novedades. */}
+        {orden.recepcion && orden.recepcion !== "aceptada" && (
+          <Card className="mt-3 border-2 border-amber-300 bg-amber-50 p-4">
+            <p className="flex items-center gap-2 text-[14.5px] font-bold leading-tight text-amber-900">
+              <AlertTriangle size={17} className="flex-none" />
+              {orden.farmacia?.razon_social ?? "La farmacia"}{" "}
+              {orden.recepcion === "no_aceptada_total"
+                ? "no aceptó la entrega"
+                : "no aceptó parte de la entrega"}
+            </p>
+            <ul className="mt-2.5 space-y-2">
+              {orden.items
+                .filter((it) => it.cantidad_no_aceptada > 0)
+                .map((it) => (
+                  <li key={it.id} className="flex gap-2.5 text-[13px] leading-snug text-amber-900">
+                    <span className="mt-[6px] h-1.5 w-1.5 flex-none rounded-full bg-amber-500" aria-hidden />
+                    <span className="min-w-0">
+                      <b>{tituloProducto(it.producto ?? {})}</b> — devolvió{" "}
+                      <b>{miles(it.cantidad_no_aceptada)}</b> de {miles(it.cantidad_aceptada)} caja
+                      {it.cantidad_aceptada !== 1 && "s"} despachadas
+                    </span>
+                  </li>
+                ))}
+            </ul>
+            {orden.recepcion_comentario && (
+              <p className="mt-3 border-t border-amber-200 pt-2.5 text-[13px] italic text-amber-900">
+                “{orden.recepcion_comentario}”
+              </p>
+            )}
+            <p className="mt-2.5 text-[12px] text-amber-800">
+              Tu stock no se modificó: ajústalo en tu catálogo si la mercancía regresó.
+            </p>
+          </Card>
+        )}
+
         {/* Seguimiento: cada estado con su fecha y hora. */}
         <div className="mt-3">
           <OrdenTimeline eventos={orden.eventos} facturaNumero={orden.factura_numero} />

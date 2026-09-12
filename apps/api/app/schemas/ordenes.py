@@ -11,6 +11,10 @@ class OrdenItem(BaseModel):
     precio_unitario_snapshot: float
     cantidad_solicitada: int
     cantidad_aceptada: int
+    # Cuánto de lo DESPACHADO rechazó la farmacia al recibir (Tanda 5). Es la
+    # decisión de la farmacia y no toca `estado_item`, que es la del proveedor
+    # y la que gobierna el motor de stock.
+    cantidad_no_aceptada: int = 0
     estado_item: str
     producto_sustituto_id: str | None = None
     oferta_sustituto_id: str | None = None
@@ -43,6 +47,11 @@ class Orden(BaseModel):
     # órdenes aún no despachadas o anteriores a la migración 21.
     factura_numero: str | None = None
     factura_registrada_at: str | None = None
+    # Veredicto de la farmacia al recibir: el distribuidor ve qué no le
+    # aceptaron y por qué (transparencia, petición del fundador 2026-09-11).
+    recepcion: str | None = None
+    recepcion_comentario: str | None = None
+    recepcion_at: str | None = None
     farmacia: OrgRef | None = None
     items: list[OrdenItem] = []
     eventos: list[OrdenEvento] = []

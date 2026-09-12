@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -87,5 +87,35 @@ class PedidoFarmacia(BaseModel):
     # Factura con la que el proveedor despachó: la farmacia la coteja contra
     # la física al recibir. No revela identidad (el alias sigue anónimo).
     factura_numero: str | None = None
+    # Veredicto de recepción (Tanda 5): qué no aceptó y el comentario opcional.
+    recepcion: str | None = None
+    recepcion_comentario: str | None = None
+    recepcion_at: str | None = None
     items: list[OrdenItem] = []
     eventos: list[OrdenEvento] = []
+
+
+class ItemNoAceptado(BaseModel):
+    """Una línea que la farmacia no aceptó, con cuántas cajas."""
+
+    item_id: str
+    cantidad: Annotated[int, Field(gt=0)]
+
+
+class RecepcionRequest(BaseModel):
+    """Cierre de la recepción de un pedido despachado (Tanda 5).
+
+    `alcance` distingue los tres desenlaces. El comentario es OPCIONAL (petición
+    explícita del fundador: "no es obligatorio el comentario") y solo tiene
+    sentido cuando algo no se aceptó — la RPC lo descarta en una recepción
+    aceptada para no dejar texto huérfano.
+
+    Validación espejo en tres capas (patrón estrenado con la factura): el
+    frontend guía, esto rechaza con 422, y la DB tiene la última palabra con sus
+    constraints y las guardas de la RPC.
+    """
+
+    alcance: Literal["aceptada", "no_aceptada_total", "no_aceptada_parcial"]
+    # Solo se leen cuando el alcance es parcial.
+    items: list[ItemNoAceptado] = []
+    comentario: Annotated[str | None, Field(max_length=500)] = None

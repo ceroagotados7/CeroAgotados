@@ -48,12 +48,18 @@ export type EstadoOrden =
 
 export type EstadoItem = "pendiente" | "aceptado" | "rechazado" | "sustituido";
 
+/** Veredicto de la FARMACIA al recibir (Tanda 5). Independiente del `estado`
+ *  del flujo y del motor de stock, que obedece a la decisión del proveedor. */
+export type Recepcion = "aceptada" | "no_aceptada_total" | "no_aceptada_parcial";
+
 export type OrdenItem = {
   id: string;
   producto_maestro_id: string;
   precio_unitario_snapshot: number;
   cantidad_solicitada: number;
   cantidad_aceptada: number;
+  /** Cuánto de lo despachado rechazó la farmacia al recibir (Tanda 5). */
+  cantidad_no_aceptada: number;
   estado_item: EstadoItem;
   producto_sustituto_id?: string | null;
   oferta_sustituto_id?: string | null;
@@ -84,6 +90,10 @@ export type Orden = {
   /** Factura del despacho (trazabilidad). Null si aún no se despacha. */
   factura_numero?: string | null;
   factura_registrada_at?: string | null;
+  /** Veredicto de la farmacia al recibir. Null mientras no se haya cerrado. */
+  recepcion?: Recepcion | null;
+  recepcion_comentario?: string | null;
+  recepcion_at?: string | null;
   farmacia?: OrgRef | null;
   items: OrdenItem[];
   eventos?: OrdenEvento[];
@@ -208,6 +218,9 @@ export type PedidoFarmacia = {
   created_at: string;
   /** Factura con la que despachó el proveedor (cotejar contra la física). */
   factura_numero?: string | null;
+  recepcion?: Recepcion | null;
+  recepcion_comentario?: string | null;
+  recepcion_at?: string | null;
   items: OrdenItem[];
   eventos?: OrdenEvento[];
 };
