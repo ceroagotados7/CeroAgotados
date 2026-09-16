@@ -24,8 +24,10 @@
 //      el padre conserva su último valor y ninguna vista cambia de estado a
 //      media escritura (una cantidad en 0 significaba "sin stock" y hacía
 //      desaparecer el propio campo).
-//   3. Mientras se escribe se emite el valor tal cual, sin acotar, para que
-//      subtotales y avisos se actualicen en vivo.
+//   3. Mientras se escribe se aplica SOLO el tope superior (`max`): si la
+//      farmacia pidió 2 cajas, el proveedor no puede teclear 3. El MÍNIMO no se
+//      aplica por tecla — era ese el que reinyectaba el "1" al borrar, no el
+//      máximo, y el vacío se sigue respetando (regla 2).
 //   4. Al SALIR del campo se acota a [min, max] y se emite ya corregido. Si se
 //      salió en vacío, se restaura el último valor del padre.
 //   5. El DOM se resincroniza con el estado en cada render: nunca puede quedar
@@ -50,7 +52,8 @@ type Props = Omit<
   onChange: (digits: string) => void;
   /** Mínimo aplicado AL SALIR del campo (no por tecla). */
   min?: number;
-  /** Máximo aplicado AL SALIR del campo (no por tecla). */
+  /** Máximo aplicado EN CADA TECLA y al salir: el campo nunca llega a mostrar
+   *  un valor por encima. Omitirlo deja el campo sin tope (precio, stock). */
   max?: number;
 };
 
@@ -103,7 +106,13 @@ export function InputMiles({ value, onChange, className, min, max, ...props }: P
         const el = e.target;
         const caret = el.selectionStart ?? el.value.length;
         digitosAntesDelCursor.current = soloDigitos(el.value.slice(0, caret)).length;
-        const digits = soloDigitos(el.value).slice(0, MAX_DIGITOS);
+        let digits = soloDigitos(el.value).slice(0, MAX_DIGITOS);
+        // Tope superior POR TECLA: el número no puede ni mostrarse por encima
+        // del máximo. Se acota el borrador además del valor emitido, para que
+        // el campo no enseñe 3 mientras el estado ya vale 2.
+        if (digits !== "" && max != null && Number(digits) > max) {
+          digits = String(max);
+        }
         setBorrador(digits);
         // Vacío NO se emite: el padre conserva su valor y nada cambia de estado
         // mientras se reescribe.
