@@ -323,8 +323,8 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
               <AlertTriangle size={17} className="flex-none" />
               {orden.farmacia?.razon_social ?? "La farmacia"}{" "}
               {orden.recepcion === "no_aceptada_total"
-                ? "no aceptó la entrega"
-                : "no aceptó parte de la entrega"}
+                ? "rechazó la entrega"
+                : "rechazó parte de la entrega"}
             </p>
             <ul className="mt-2.5 space-y-2">
               {orden.items
@@ -576,9 +576,11 @@ function ItemEditable({
             >
               <Minus size={14} />
             </button>
-            {/* Sin acotar por tecla: acotar aquí reinyectaba un 1 al borrar y
-                hacía imposible reescribir la cantidad (reporte del equipo).
-                InputMiles acota a [1, solicitado] al salir del campo. */}
+            {/* El MÁXIMO sí se acota por tecla: no se puede teclear más de lo
+                que pidió la farmacia. El MÍNIMO no — acotarlo por tecla
+                reinyectaba un 1 al borrar y hacía imposible reescribir la
+                cantidad (reporte del equipo). InputMiles aplica [1, solicitado]
+                completo al salir del campo. */}
             <InputMiles
               id={`cant-${item.id}`}
               value={String(cantidad)}

@@ -283,7 +283,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
               onClick={() => setAbierto(true)}
               className="flex min-h-[44px] w-full items-center justify-center gap-1.5 py-3 text-[13px] font-semibold text-amber-700"
             >
-              <AlertTriangle size={15} /> No acepté este pedido
+              <AlertTriangle size={15} /> Rechazar la entrega
             </button>
           </div>
         )}
@@ -310,8 +310,8 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
             <p className="flex items-center gap-1.5 text-[13.5px] font-semibold text-amber-800">
               <AlertTriangle size={15} />
               {pedido.recepcion === "no_aceptada_total"
-                ? "No aceptaste este pedido"
-                : "No aceptaste parte de este pedido"}
+                ? "Rechazaste este pedido"
+                : "Rechazaste parte de este pedido"}
             </p>
             {pedido.recepcion_comentario && (
               <p className="mt-1.5 text-[12.5px] text-muted">“{pedido.recepcion_comentario}”</p>

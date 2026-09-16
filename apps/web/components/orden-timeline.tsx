@@ -16,7 +16,7 @@ const EVENTO_LABEL: Record<string, string> = {
   factura_corregida: "Factura corregida",
   // Tanda 5. Sin esta entrada el timeline pintaba el tipo crudo ("no_aceptada"):
   // cualquier evento nuevo hay que nombrarlo también aquí.
-  no_aceptada: "Entrega no aceptada",
+  no_aceptada: "Entrega rechazada",
 };
 
 /** Timeline de estados de una orden con timestamp por transición.

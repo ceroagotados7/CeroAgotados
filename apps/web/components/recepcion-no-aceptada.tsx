@@ -1,6 +1,8 @@
 "use client";
 
-// Registro de "no acepté este pedido" (Tanda 5, petición del fundador).
+// Registro del rechazo de una entrega por parte de la farmacia (Tanda 5).
+// El rótulo visible pasó de "no acepté" a "rechazar" el 2026-09-16 — los
+// identificadores (no_aceptada_total/parcial) siguen igual: son contrato de API y BD.
 //
 // Se abre desde el detalle del pedido cuando está despachado. La farmacia elige
 // si no aceptó NADA o solo una parte, y puede dejar un comentario — opcional a
@@ -91,7 +93,7 @@ export function RecepcionNoAceptada({
         <AlertTriangle size={18} className="mt-0.5 flex-none text-amber-700" />
         <div className="min-w-0 flex-1">
           <p className="font-display text-[15.5px] font-bold leading-tight">
-            ¿Qué no aceptaste de este pedido?
+            ¿Qué vas a rechazar de este pedido?
           </p>
           <p className="mt-1 text-[12.5px] text-muted">
             Quedará <b>en firme</b> y el proveedor lo verá.
@@ -116,7 +118,7 @@ export function RecepcionNoAceptada({
           }}
           className={`chip justify-center ${alcance === "no_aceptada_total" ? "chip-active" : ""}`}
         >
-          No acepté nada
+          Rechazar todo
         </button>
         <button
           type="button"
@@ -143,7 +145,7 @@ export function RecepcionNoAceptada({
                   {i.cantidad_aceptada !== 1 && "s"}
                 </p>
                 <div className="mt-2 flex items-center gap-2">
-                  <span className="flex-none text-[12px] text-muted">No acepté</span>
+                  <span className="flex-none text-[12px] text-muted">Rechazar</span>
                   <button
                     type="button"
                     className="chip !px-2.5"
@@ -159,7 +161,7 @@ export function RecepcionNoAceptada({
                     min={0}
                     max={i.cantidad_aceptada}
                     className="input w-[64px] flex-none py-2 text-center font-semibold"
-                    aria-label={`Cajas no aceptadas de ${i.producto?.nombre ?? "producto"}`}
+                    aria-label={`Cajas rechazadas de ${i.producto?.nombre ?? "producto"}`}
                   />
                   <button
                     type="button"
@@ -200,7 +202,7 @@ export function RecepcionNoAceptada({
 
       {cajas > 0 && (
         <p className="mt-2 text-[12.5px] text-amber-800">
-          Vas a marcar <b>{miles(cajas)} caja{cajas !== 1 && "s"}</b> como no aceptadas
+          Vas a rechazar <b>{miles(cajas)} caja{cajas !== 1 && "s"}</b>
           {valor > 0 && <> · {cop(valor)}</>}
         </p>
       )}
@@ -210,7 +212,7 @@ export function RecepcionNoAceptada({
       {confirmando ? (
         <div className="mt-3 rounded-xl border border-amber-300 bg-surface p-3.5 text-center">
           <p className="text-[13.5px] font-semibold leading-snug">
-            ¿Marcar el pedido completo como no aceptado?
+            ¿Rechazar el pedido completo?
           </p>
           <p className="mt-1 text-[12.5px] text-muted">
             Son {miles(cajas)} caja{cajas !== 1 && "s"}
@@ -233,7 +235,7 @@ export function RecepcionNoAceptada({
               onClick={confirmar}
               disabled={guardando}
             >
-              {guardando ? "Registrando…" : "Sí, no acepté nada"}
+              {guardando ? "Registrando…" : "Sí, rechazar todo"}
             </Button>
           </div>
         </div>
