@@ -48,8 +48,8 @@ export default function PedidoPage() {
           : e instanceof ApiCallError && e.message.includes("oferta_no_disponible")
             ? "Alguna opción ya no está disponible. Quítala y vuelve a buscarla."
             : e instanceof ApiCallError && e.message.includes("farmacia_no_aprobada")
-              ? "Tu cuenta aún no está aprobada: podrás confirmar pedidos cuando el equipo la verifique."
-              : "No se pudo confirmar el pedido. Inténtalo de nuevo.";
+              ? "Tu cuenta aún no está aprobada: podrás enviar pedidos cuando el equipo la verifique."
+              : "No se pudo enviar el pedido. Inténtalo de nuevo.";
       setError(msg);
       setEnviando(false);
     }
@@ -149,8 +149,9 @@ export default function PedidoPage() {
                             {cop(i.precio)} / caja · stock {miles(i.stock)}
                           </p>
                         </div>
-                        {/* Sin acotar por tecla: el campo se puede vaciar y
-                            reescribir. InputMiles acota al salir. */}
+                        {/* El máximo (el stock) se acota por tecla; el mínimo
+                            no, para que el campo se pueda vaciar y reescribir.
+                            InputMiles aplica ambos al salir. */}
                         <InputMiles
                           value={i.cantidad > 0 ? String(i.cantidad) : ""}
                           onChange={(d) => setCantidad(i.oferta_id, Number(d))}
@@ -204,7 +205,7 @@ export default function PedidoPage() {
               </Button>
             </Link>
             <Button size="lg" block className="flex-1" disabled={enviando || !aprobada} onClick={confirmar}>
-              {enviando ? "Confirmando…" : "Confirmar pedido"}
+              {enviando ? "Enviando…" : "Enviar pedido"}
             </Button>
           </div>
           {!aprobada && (
