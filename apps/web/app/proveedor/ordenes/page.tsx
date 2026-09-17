@@ -8,13 +8,17 @@ import { OrdenImprimible } from "@/components/orden-imprimible";
 import { AppBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, CardFlat, Chip, EmptyState, IconButton, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
+import { cop, etiquetaOrden, hace, iniciales, miles } from "@/lib/format";
 import { identidadProducto } from "@/lib/producto";
 import type { ItemDecision, Orden } from "@/lib/types";
 
-type Filtro = "pendientes" | "preparacion" | "despachadas" | "todas";
+type Filtro = "pendientes" | "preparacion" | "despachadas" | "novedades" | "todas";
 const AVATAR_BG = ["bg-teal-600", "bg-primary-700", "bg-slate-500", "bg-slate-400"];
 const EN_PREPARACION: string[] = ["aceptada_parcial", "aceptada_total"];
+// Entregas que la farmacia no aceptó (entera o en parte). Sin este filtro se
+// perdían entre las "Todas": cerraban como 'completada', igual que una entrega
+// limpia, y el distribuidor no tenía dónde encontrarlas.
+const conNovedades = (o: Orden) => !!o.recepcion && o.recepcion !== "aceptada";
 
 export default function OrdenesPage() {
   const [ordenes, setOrdenes] = useState<Orden[] | null>(null);
@@ -54,6 +58,7 @@ export default function OrdenesPage() {
       pendientes: l.filter((o) => o.estado === "pendiente").length,
       preparacion: l.filter((o) => EN_PREPARACION.includes(o.estado)).length,
       despachadas: l.filter((o) => o.estado === "despachada").length,
+      novedades: l.filter(conNovedades).length,
       todas: l.length,
     };
   }, [ordenes]);
@@ -63,6 +68,7 @@ export default function OrdenesPage() {
     if (filtro === "pendientes") return l.filter((o) => o.estado === "pendiente");
     if (filtro === "preparacion") return l.filter((o) => EN_PREPARACION.includes(o.estado));
     if (filtro === "despachadas") return l.filter((o) => o.estado === "despachada");
+    if (filtro === "novedades") return l.filter(conNovedades);
     return l;
   }, [ordenes, filtro]);
 
@@ -104,6 +110,11 @@ export default function OrdenesPage() {
           <Chip active={filtro === "despachadas"} onClick={() => setFiltro("despachadas")}>
             Despachadas · {counts.despachadas}
           </Chip>
+          {counts.novedades > 0 && (
+            <Chip active={filtro === "novedades"} onClick={() => setFiltro("novedades")}>
+              Con novedades · {counts.novedades}
+            </Chip>
+          )}
           <Chip active={filtro === "todas"} onClick={() => setFiltro("todas")}>
             Todas · {counts.todas}
           </Chip>
@@ -234,9 +245,14 @@ function OrdenPendiente({
 
 function CompactOrden({ orden, index }: { orden: Orden; index: number }) {
   const cajas = orden.items.reduce((s, it) => s + it.cantidad_solicitada, 0);
+  // Con devolución se muestra lo que la farmacia va a pagar, no lo facturado:
+  // es la cifra que el distribuidor necesita para su cartera. El detalle sigue
+  // enseñando las dos.
   const totalMostrar = orden.estado === "pendiente"
     ? orden.items.reduce((s, it) => s + it.cantidad_solicitada * it.precio_unitario_snapshot, 0)
-    : orden.total;
+    : orden.valor_no_aceptado > 0
+      ? orden.total_a_pagar
+      : orden.total;
   return (
     <Link href={`/proveedor/ordenes/${orden.id}`}>
       <CardFlat className={`lift p-4 ${orden.estado === "despachada" ? "opacity-85" : ""}`}>
@@ -252,7 +268,9 @@ function CompactOrden({ orden, index }: { orden: Orden; index: number }) {
               </p>
             </div>
           </div>
-          <Badge tone={ESTADO_ORDEN_TONE[orden.estado]}>{ESTADO_ORDEN_LABEL[orden.estado]}</Badge>
+          <Badge tone={etiquetaOrden(orden.estado, orden.recepcion).tone}>
+            {etiquetaOrden(orden.estado, orden.recepcion).label}
+          </Badge>
         </div>
         <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
           <span className="text-[12.5px] text-muted">

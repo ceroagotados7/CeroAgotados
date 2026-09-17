@@ -11,7 +11,7 @@ import { BackBar } from "@/components/shell";
 import { Avatar, Badge, Button, Card, Spinner } from "@/components/ui";
 import { api, ApiCallError } from "@/lib/api";
 import { cajas, faltantesDeOrden } from "@/lib/faltantes";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
+import { cop, etiquetaOrden, hace, iniciales, miles } from "@/lib/format";
 import { tituloProducto } from "@/lib/producto";
 import type { PedidoFarmacia } from "@/lib/types";
 
@@ -49,14 +49,13 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
   if (!pedido) return <Spinner />;
 
   const gestionado = pedido.estado !== "pendiente";
-  const noDisponible = pedido.items.filter((i) => i.estado_item === "rechazado");
   // Faltantes (rechazos y parciales) con lógica pura testeable (lib/faltantes).
   const faltantes = faltantesDeOrden(pedido.items, pedido.estado);
   const faltantePorItem = new Map(faltantes.map((f) => [f.itemId, f]));
-  const descuento = noDisponible.reduce(
-    (acc, i) => acc + i.cantidad_solicitada * i.precio_unitario_snapshot,
-    0,
-  );
+  // Lo que el proveedor NO despachó: la diferencia entre lo pedido y lo que
+  // confirmó. Antes solo restaba los ítems rechazados del todo e ignoraba los
+  // parciales, así que "Solicitado − No despachado" no daba el total a pagar.
+  const noDespachado = gestionado ? pedido.total_solicitado - pedido.total : 0;
 
   async function noAceptar(payload: {
     alcance: string;
@@ -118,8 +117,8 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
               {pedido.proveedor_nombre && `${pedido.proveedor_alias} · `}Creado {hace(pedido.created_at)}
             </p>
           </div>
-          <Badge tone={ESTADO_ORDEN_TONE[pedido.estado] ?? "gray"} className="flex-none">
-            {ESTADO_ORDEN_LABEL[pedido.estado] ?? pedido.estado}
+          <Badge tone={etiquetaOrden(pedido.estado, pedido.recepcion).tone} className="flex-none">
+            {etiquetaOrden(pedido.estado, pedido.recepcion).label}
           </Badge>
         </Card>
 
@@ -243,22 +242,39 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
             <span className="text-muted">Solicitado</span>
             <span className="font-semibold">{cop(pedido.total_solicitado)}</span>
           </div>
-          {gestionado && descuento > 0 && (
+          {noDespachado > 0 && (
             <div className="mt-1.5 flex items-center justify-between text-[13px]">
-              <span className="text-muted">No disponible</span>
-              <span className="font-semibold text-danger">−{cop(descuento)}</span>
+              <span className="text-muted">No despachado</span>
+              <span className="font-semibold text-danger">−{cop(noDespachado)}</span>
+            </div>
+          )}
+          {/* Lo que devolviste al recibir. La factura del proveedor sigue
+              diciendo el total despachado; esto es lo que no vas a pagar. */}
+          {pedido.valor_no_aceptado > 0 && (
+            <div className="mt-1.5 flex items-center justify-between text-[13px]">
+              <span className="text-muted">Devuelto al recibir</span>
+              <span className="font-semibold text-danger">−{cop(pedido.valor_no_aceptado)}</span>
             </div>
           )}
           <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
             <span className="text-[13.5px] font-semibold">Total a pagar</span>
             <span className="font-display text-[17px] font-extrabold text-primary-800">
-              {cop(gestionado ? pedido.total : pedido.total_solicitado)}
+              {cop(gestionado ? pedido.total_a_pagar : pedido.total_solicitado)}
             </span>
           </div>
+          {pedido.valor_no_aceptado > 0 && (
+            <p className="mt-1.5 text-[11.5px] text-muted">
+              El proveedor facturó {cop(pedido.total)}. Cotéjalo con la factura física.
+            </p>
+          )}
         </Card>
 
         {/* Seguimiento: cada estado con su fecha y hora. */}
-        <OrdenTimeline eventos={pedido.eventos} facturaNumero={pedido.factura_numero} />
+        <OrdenTimeline
+          eventos={pedido.eventos}
+          facturaNumero={pedido.factura_numero}
+          valorNoAceptado={pedido.valor_no_aceptado}
+        />
 
         {error && <p className="mb-3 text-center text-[12.5px] text-danger">{error}</p>}
 

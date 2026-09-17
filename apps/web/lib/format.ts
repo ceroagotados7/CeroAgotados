@@ -58,6 +58,37 @@ export const ESTADO_ORDEN_TONE: Record<string, "green" | "teal" | "amber" | "red
   cancelada: "gray",
 };
 
+export type TonoBadge = "green" | "teal" | "amber" | "red" | "gray";
+
+/** Etiqueta y tono de una orden, mirando TAMBIÉN el veredicto de recepción.
+ *
+ *  `estado` por sí solo no basta: la RPC `registrar_recepcion` deja la orden en
+ *  'completada' tanto si la farmacia la recibió conforme como si la rechazó
+ *  entera, así que el distribuidor veía el mismo badge verde "Completada" en
+ *  los dos casos. Pasó en producción con ORD-0017 (petición del fundador:
+ *  "debe haber un estado que permita entender muy rápidamente que ese pedido se
+ *  completó, pero con novedades").
+ *
+ *  Es una etiqueta DERIVADA, no un estado nuevo en la base: `orden_estado` no
+ *  cambia y ninguna RPC se toca. */
+export function etiquetaOrden(
+  estado: string,
+  recepcion?: string | null,
+): { label: string; tone: TonoBadge } {
+  if (estado === "completada" && recepcion === "no_aceptada_parcial") {
+    return { label: "Completada con novedades", tone: "amber" };
+  }
+  if (estado === "completada" && recepcion === "no_aceptada_total") {
+    return { label: "Entrega rechazada", tone: "red" };
+  }
+  // Fallback explícito: la vista del proveedor indexaba los mapas a pelo y un
+  // estado desconocido pintaba "undefined".
+  return {
+    label: ESTADO_ORDEN_LABEL[estado] ?? estado,
+    tone: ESTADO_ORDEN_TONE[estado] ?? "gray",
+  };
+}
+
 /** Tiempo relativo compacto en español: "hace 12 min", "hace 2 h", "ayer", fecha. */
 export function hace(iso: string): string {
   const t = new Date(iso).getTime();

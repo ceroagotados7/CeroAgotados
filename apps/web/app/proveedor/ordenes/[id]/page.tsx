@@ -11,7 +11,7 @@ import { Avatar, Badge, Button, Card, IconButton, Spinner } from "@/components/u
 import { api, ApiCallError } from "@/lib/api";
 import { InputMiles } from "@/components/input-miles";
 import { facturaValida, normalizarFactura } from "@/lib/factura";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, fechaHora, hace, iniciales, miles } from "@/lib/format";
+import { cop, etiquetaOrden, fechaHora, hace, iniciales, miles } from "@/lib/format";
 import { tituloProducto } from "@/lib/producto";
 import type { ItemDecision, Oferta, Orden, OrdenItem } from "@/lib/types";
 
@@ -335,7 +335,8 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
                     <span className="min-w-0">
                       <b>{tituloProducto(it.producto ?? {})}</b> — devolvió{" "}
                       <b>{miles(it.cantidad_no_aceptada)}</b> de {miles(it.cantidad_aceptada)} caja
-                      {it.cantidad_aceptada !== 1 && "s"} despachadas
+                      {it.cantidad_aceptada !== 1 && "s"} despachadas{" "}
+                      <b>({cop(it.cantidad_no_aceptada * it.precio_unitario_snapshot)})</b>
                     </span>
                   </li>
                 ))}
@@ -345,6 +346,12 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
                 “{orden.recepcion_comentario}”
               </p>
             )}
+            <div className="mt-3 flex items-center justify-between border-t border-amber-200 pt-2.5">
+              <span className="text-[13px] font-semibold text-amber-900">Total devuelto</span>
+              <span className="font-display text-[16px] font-extrabold text-amber-900">
+                {cop(orden.valor_no_aceptado)}
+              </span>
+            </div>
             <p className="mt-2.5 text-[12px] text-amber-800">
               Tu stock no se modificó: ajústalo en tu catálogo si la mercancía regresó.
             </p>
@@ -353,7 +360,11 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
 
         {/* Seguimiento: cada estado con su fecha y hora. */}
         <div className="mt-3">
-          <OrdenTimeline eventos={orden.eventos} facturaNumero={orden.factura_numero} />
+          <OrdenTimeline
+            eventos={orden.eventos}
+            facturaNumero={orden.factura_numero}
+            valorNoAceptado={orden.valor_no_aceptado}
+          />
         </div>
 
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
@@ -418,7 +429,9 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
           </>
         ) : (
           <div className="flex items-center justify-center gap-2 py-1 text-[13px] text-muted">
-            <Badge tone={ESTADO_ORDEN_TONE[orden.estado]}>{ESTADO_ORDEN_LABEL[orden.estado]}</Badge>
+            <Badge tone={etiquetaOrden(orden.estado, orden.recepcion).tone}>
+              {etiquetaOrden(orden.estado, orden.recepcion).label}
+            </Badge>
             <span>Total {cop(orden.total)}</span>
           </div>
         )}
@@ -646,9 +659,25 @@ function ResumenLectura({ orden }: { orden: Orden }) {
       })}
       <Card className="p-4">
         <div className="flex items-center justify-between">
-          <span className="text-[14px] font-semibold">Total confirmado</span>
+          <span className="text-[14px] font-semibold">Total facturado</span>
           <span className="font-display text-[20px] font-extrabold text-primary-800">{cop(orden.total)}</span>
         </div>
+        {/* Si hubo devolución, el distribuidor necesita las DOS cifras: lo que
+            facturó (no cambia, es su factura) y lo que va a cobrar de verdad. */}
+        {orden.valor_no_aceptado > 0 && (
+          <>
+            <div className="mt-1.5 flex items-center justify-between text-[13px]">
+              <span className="text-muted">Devuelto por la farmacia</span>
+              <span className="font-semibold text-amber-700">−{cop(orden.valor_no_aceptado)}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
+              <span className="text-[14px] font-semibold">La farmacia pagará</span>
+              <span className="font-display text-[20px] font-extrabold text-amber-700">
+                {cop(orden.total_a_pagar)}
+              </span>
+            </div>
+          </>
+        )}
       </Card>
     </div>
   );

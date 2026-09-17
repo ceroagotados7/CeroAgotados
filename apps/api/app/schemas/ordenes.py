@@ -1,7 +1,8 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.dinero import total_a_pagar, valor_no_aceptado
 from app.schemas.catalogo import ProductoMaestro
 
 
@@ -55,6 +56,19 @@ class Orden(BaseModel):
     farmacia: OrgRef | None = None
     items: list[OrdenItem] = []
     eventos: list[OrdenEvento] = []
+    # Derivadas, no están en la BD (ver app/dinero.py): lo que la farmacia
+    # devolvió y lo que por tanto va a pagar. `total` sigue siendo lo despachado
+    # y facturado, que es la base de la comisión y NO baja con las devoluciones.
+    # Se calculan en el validador de abajo, no en cada sitio que construye una
+    # Orden: aquí se hace `Orden(**row)` en varios lugares.
+    valor_no_aceptado: float = 0.0
+    total_a_pagar: float = 0.0
+
+    @model_validator(mode="after")
+    def _valorizar_devoluciones(self) -> "Orden":
+        self.valor_no_aceptado = valor_no_aceptado(self.items)
+        self.total_a_pagar = total_a_pagar(self.total, self.items)
+        return self
 
 
 class ItemDecision(BaseModel):

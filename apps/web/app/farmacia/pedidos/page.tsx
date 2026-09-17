@@ -8,7 +8,7 @@ import { AppBar, refrescarBadge } from "@/components/shell";
 import { Avatar, Badge, Card, Chip, EmptyState, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
 import { faltantesDeOrden } from "@/lib/faltantes";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, hace, iniciales, miles } from "@/lib/format";
+import { cop, etiquetaOrden, hace, iniciales, miles } from "@/lib/format";
 import type { PedidoFarmacia } from "@/lib/types";
 
 type Filtro = "activos" | "entregados" | "todos";
@@ -104,8 +104,8 @@ export default function MisPedidosPage() {
                         </p>
                         <p className="mt-0.5 text-[12px] text-muted">{hace(p.created_at)}</p>
                       </div>
-                      <Badge tone={ESTADO_ORDEN_TONE[p.estado] ?? "gray"} className="flex-none">
-                        {ESTADO_ORDEN_LABEL[p.estado] ?? p.estado}
+                      <Badge tone={etiquetaOrden(p.estado, p.recepcion).tone} className="flex-none">
+                        {etiquetaOrden(p.estado, p.recepcion).label}
                       </Badge>
                     </div>
                     <div className="mt-2.5 flex items-center justify-between border-t border-line pt-2.5">
@@ -113,7 +113,7 @@ export default function MisPedidosPage() {
                         {nItems} producto{nItems !== 1 && "s"} · {miles(cajas)} cajas
                       </p>
                       <p className="font-display text-[15px] font-bold">
-                        {cop(p.total > 0 ? p.total : p.total_solicitado)}
+                        {cop(p.total > 0 ? p.total_a_pagar : p.total_solicitado)}
                       </p>
                     </div>
                     {nFaltantes > 0 && (

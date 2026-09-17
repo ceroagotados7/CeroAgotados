@@ -94,6 +94,11 @@ export type Orden = {
   recepcion?: Recepcion | null;
   recepcion_comentario?: string | null;
   recepcion_at?: string | null;
+  /** Derivadas en la API (no están en la BD). `total` es lo despachado y
+   *  facturado —base de la comisión, no baja con devoluciones—; `total_a_pagar`
+   *  es lo que la farmacia paga de verdad. */
+  valor_no_aceptado: number;
+  total_a_pagar: number;
   farmacia?: OrgRef | null;
   items: OrdenItem[];
   eventos?: OrdenEvento[];
@@ -221,6 +226,10 @@ export type PedidoFarmacia = {
   recepcion?: Recepcion | null;
   recepcion_comentario?: string | null;
   recepcion_at?: string | null;
+  /** Ver Orden: `total` es lo facturado, `total_a_pagar` lo que se paga tras
+   *  descontar las cajas devueltas. */
+  valor_no_aceptado: number;
+  total_a_pagar: number;
   items: OrdenItem[];
   eventos?: OrdenEvento[];
 };

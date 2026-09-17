@@ -15,7 +15,7 @@ import { BannerVerificacion } from "@/components/banner-verificacion";
 import { AppBar } from "@/components/shell";
 import { Avatar, Badge, Card, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, iniciales, mesActual, mesAnterior, miles } from "@/lib/format";
+import { cop, etiquetaOrden, iniciales, mesActual, mesAnterior, miles } from "@/lib/format";
 import type { ProveedorDashboard } from "@/lib/types";
 
 const AVATAR_BG = ["bg-teal-600", "bg-primary-700", "bg-slate-500"];
@@ -158,8 +158,8 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="font-display text-[14px] font-bold">{cop(o.total)}</p>
-                    <Badge tone={ESTADO_ORDEN_TONE[o.estado]} className="mt-1">
-                      {ESTADO_ORDEN_LABEL[o.estado]}
+                    <Badge tone={etiquetaOrden(o.estado).tone} className="mt-1">
+                      {etiquetaOrden(o.estado).label}
                     </Badge>
                   </div>
                 </div>

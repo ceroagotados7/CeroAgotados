@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { AppBar } from "@/components/shell";
 import { Badge, Card, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
-import { cop, ESTADO_ORDEN_LABEL, ESTADO_ORDEN_TONE, miles } from "@/lib/format";
+import { cop, etiquetaOrden, miles } from "@/lib/format";
 import type { AdminGanancias } from "@/lib/types";
 
 export default function GananciasPage() {
@@ -108,8 +108,8 @@ export default function GananciasPage() {
                   ) : (
                     <Badge tone="gray">Sin factura aún</Badge>
                   )}
-                  <Badge tone={ESTADO_ORDEN_TONE[t.estado] ?? "gray"}>
-                    {ESTADO_ORDEN_LABEL[t.estado] ?? t.estado}
+                  <Badge tone={etiquetaOrden(t.estado).tone}>
+                    {etiquetaOrden(t.estado).label}
                   </Badge>
                 </div>
               </div>

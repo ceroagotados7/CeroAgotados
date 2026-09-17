@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cop, miles, milesInput, soloDigitos } from "./format";
+import { cop, etiquetaOrden, miles, milesInput, soloDigitos } from "./format";
 
 // El design system es es-CO: el separador de miles es el punto.
 describe("miles", () => {
@@ -80,5 +80,63 @@ describe("cop (no debe romperse con los nuevos helpers al lado)", () => {
     // Intl puede usar espacio duro entre símbolo y cifra: comparamos sin él.
     expect(cop(1250000).replace(/\s/g, "")).toBe("$1.250.000");
     expect(cop(0).replace(/\s/g, "")).toBe("$0");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// etiquetaOrden (2026-09-17)
+//
+// `estado` por sí solo no basta: la RPC deja la orden en 'completada' tanto si
+// la farmacia la recibió conforme como si la rechazó entera, y el distribuidor
+// veía el mismo badge verde en los dos casos. Pasó con ORD-0017 en producción.
+// ---------------------------------------------------------------------------
+describe("etiquetaOrden", () => {
+  it("una entrega conforme sigue siendo Completada en verde", () => {
+    expect(etiquetaOrden("completada", "aceptada")).toEqual({
+      label: "Completada",
+      tone: "green",
+    });
+  });
+
+  it("un rechazo parcial se distingue: Completada con novedades, en ámbar", () => {
+    expect(etiquetaOrden("completada", "no_aceptada_parcial")).toEqual({
+      label: "Completada con novedades",
+      tone: "amber",
+    });
+  });
+
+  it("un rechazo total se llama por su nombre y va en rojo", () => {
+    expect(etiquetaOrden("completada", "no_aceptada_total")).toEqual({
+      label: "Entrega rechazada",
+      tone: "red",
+    });
+  });
+
+  it("una completada sin veredicto aún no inventa novedades", () => {
+    expect(etiquetaOrden("completada", null).label).toBe("Completada");
+    expect(etiquetaOrden("completada").label).toBe("Completada");
+  });
+
+  it("el veredicto solo manda sobre 'completada', no sobre los demás estados", () => {
+    // Una orden despachada nunca tiene recepción, pero si la tuviera no debe
+    // cambiar de etiqueta: el estado del flujo manda mientras no esté cerrada.
+    expect(etiquetaOrden("despachada", "no_aceptada_total").label).toBe("Despachada");
+  });
+
+  it("mantiene las etiquetas y tonos de los demás estados", () => {
+    expect(etiquetaOrden("pendiente")).toEqual({ label: "Pendiente", tone: "amber" });
+    expect(etiquetaOrden("aceptada_parcial")).toEqual({ label: "Aceptada parcial", tone: "amber" });
+    expect(etiquetaOrden("aceptada_total")).toEqual({ label: "Aceptada", tone: "green" });
+    expect(etiquetaOrden("rechazada")).toEqual({ label: "Rechazada", tone: "red" });
+    expect(etiquetaOrden("cancelada")).toEqual({ label: "Cancelada", tone: "gray" });
+  });
+
+  it("un estado desconocido no pinta 'undefined'", () => {
+    // La vista del proveedor indexaba los mapas a pelo y eso era justo lo que
+    // pasaba si algún día se añadía un estado nuevo.
+    expect(etiquetaOrden("estado_del_futuro")).toEqual({
+      label: "estado_del_futuro",
+      tone: "gray",
+    });
   });
 });

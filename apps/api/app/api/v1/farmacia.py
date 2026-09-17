@@ -347,8 +347,10 @@ def _a_pedido(row: dict) -> PedidoFarmacia:
         created_at=row["created_at"],
         factura_numero=row.get("factura_numero"),
         # Veredicto de recepción (Tanda 5). Este mapeo es campo por campo a
-        # propósito —filtra lo que no debe salir— así que un campo nuevo hay que
-        # añadirlo aquí además de al SELECT y al schema.
+        # propósito —filtra lo que no debe salir— así que un campo nuevo de la
+        # TABLA hay que añadirlo aquí además de al SELECT y al schema. Los
+        # derivados (valor_no_aceptado, total_a_pagar) no: los calcula el
+        # validador del schema a partir de `items`.
         recepcion=row.get("recepcion"),
         recepcion_comentario=row.get("recepcion_comentario"),
         recepcion_at=row.get("recepcion_at"),

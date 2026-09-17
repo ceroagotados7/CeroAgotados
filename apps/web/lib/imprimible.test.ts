@@ -32,6 +32,10 @@ function orden(estado: Orden["estado"], items: OrdenItem[]): Orden {
     estado,
     total: 0,
     created_at: "2026-09-05T00:00:00Z",
+    // Derivadas en la API. La hoja imprimible no las usa (se cotejea contra la
+    // factura, que es lo despachado), pero el tipo las exige.
+    valor_no_aceptado: 0,
+    total_a_pagar: 0,
     items,
   };
 }

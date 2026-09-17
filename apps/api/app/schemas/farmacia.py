@@ -1,7 +1,8 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
+from app.dinero import total_a_pagar, valor_no_aceptado
 from app.schemas.catalogo import ProductoMaestro
 from app.schemas.ordenes import OrdenEvento, OrdenItem
 
@@ -93,6 +94,18 @@ class PedidoFarmacia(BaseModel):
     recepcion_at: str | None = None
     items: list[OrdenItem] = []
     eventos: list[OrdenEvento] = []
+    # Derivadas, no están en la BD (ver app/dinero.py). `total` es lo que el
+    # proveedor despachó y facturó; `total_a_pagar` es lo que la farmacia paga
+    # de verdad después de devolver cajas. Antes solo existía la primera, y la
+    # farmacia veía como "Total a pagar" mercancía que había rechazado.
+    valor_no_aceptado: float = 0.0
+    total_a_pagar: float = 0.0
+
+    @model_validator(mode="after")
+    def _valorizar_devoluciones(self) -> "PedidoFarmacia":
+        self.valor_no_aceptado = valor_no_aceptado(self.items)
+        self.total_a_pagar = total_a_pagar(self.total, self.items)
+        return self
 
 
 class ItemNoAceptado(BaseModel):

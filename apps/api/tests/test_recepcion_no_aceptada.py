@@ -17,7 +17,7 @@ import uuid
 import pytest
 
 from app.supabase_client import get_service_client
-from tests.conftest import USER_FARMACIA1, USER_PROVEEDOR1, make_token
+from tests.conftest import USER_ADMIN, USER_FARMACIA1, USER_PROVEEDOR1, make_token
 
 pytestmark = pytest.mark.usefixtures("live_db")
 
@@ -33,6 +33,12 @@ def headers_farmacia1() -> dict[str, str]:
 @pytest.fixture
 def headers_proveedor1() -> dict[str, str]:
     return {"Authorization": f"Bearer {make_token(USER_PROVEEDOR1)}"}
+
+
+@pytest.fixture
+def headers_admin() -> dict[str, str]:
+    """Para comprobar que una devolución no mueve la comisión."""
+    return {"Authorization": f"Bearer {make_token(USER_ADMIN)}"}
 
 
 @pytest.fixture
@@ -68,6 +74,11 @@ def orden_despachada():
                     "proveedor_id": ORG_PROVEEDOR1,
                     "estado": estado,
                     "created_by": USER_FARMACIA1,
+                    # Lo que habría dejado `aceptar_orden`: 10 + 5 cajas
+                    # aceptadas a 1000. Una orden despachada con total 0 no
+                    # existe en la realidad, y sin esto no se puede comprobar
+                    # el descuento por devoluciones.
+                    "total": 15000,
                     "factura_numero": "FT-TEST-1" if estado == "despachada" else None,
                 }
             )
@@ -480,3 +491,125 @@ def test_el_proveedor_ve_el_veredicto_y_el_motivo(
     assert d["recepcion"] == "no_aceptada_parcial"
     assert d["recepcion_comentario"] == "Cuatro cajas con el empaque reventado"
     assert next(i for i in d["items"] if i["id"] == item["id"])["cantidad_no_aceptada"] == 4
+
+
+# --------------------------------------------------------------------------- #
+# El monto a pagar (2026-09-17)
+#
+# `total` es lo que el distribuidor despachó y facturó, y es la base de la
+# comisión: una devolución NO lo baja (si la farmacia no recibió, falló el
+# distribuidor, no la plataforma). Lo que sí baja es lo que la farmacia PAGA.
+# Antes solo existía la primera cifra y la farmacia veía como "Total a pagar"
+# mercancía que había rechazado — pasó de verdad en producción con ORD-0017.
+#
+# La fixture despacha 15 cajas a 1000: total = 15000.
+# --------------------------------------------------------------------------- #
+
+def test_recepcion_conforme_se_paga_todo(client, headers_farmacia1, orden_despachada):
+    o = orden_despachada("T-PAG-1")
+    r = client.post(f"/v1/farmacia/pedidos/{o['id']}/recibir", headers=headers_farmacia1)
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["total"] == 15000
+    assert d["valor_no_aceptado"] == 0
+    assert d["total_a_pagar"] == 15000
+
+
+def test_rechazo_parcial_descuenta_lo_devuelto(client, headers_farmacia1, orden_despachada):
+    """3 cajas de 1000 devueltas: se pagan 12000 de los 15000 facturados."""
+    o = orden_despachada("T-PAG-2")
+    item = o["items"][0]  # el de 10 cajas
+    r = client.post(
+        f"/v1/farmacia/pedidos/{o['id']}/no-aceptar",
+        json={"alcance": "no_aceptada_parcial", "items": [{"item_id": item["id"], "cantidad": 3}]},
+        headers=headers_farmacia1,
+    )
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["valor_no_aceptado"] == 3000
+    assert d["total_a_pagar"] == 12000
+    # La venta no se toca: es la base de la comisión.
+    assert d["total"] == 15000
+
+
+def test_rechazo_total_no_se_paga_nada(client, headers_farmacia1, orden_despachada):
+    o = orden_despachada("T-PAG-3")
+    r = client.post(
+        f"/v1/farmacia/pedidos/{o['id']}/no-aceptar",
+        json={"alcance": "no_aceptada_total"},
+        headers=headers_farmacia1,
+    )
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["valor_no_aceptado"] == 15000
+    assert d["total_a_pagar"] == 0
+    assert d["total"] == 15000
+
+
+def test_lo_que_el_proveedor_no_despacho_no_cuenta_como_devolucion(
+    client, headers_farmacia1, orden_despachada
+):
+    """El ítem rechazado por el proveedor (0 cajas) no puede aportar dinero.
+
+    Lo impide `chk_no_aceptada_no_excede`: no se devuelve lo que nunca llegó.
+    Por eso un rechazo total son 15000 y no los 19000 que se pidieron.
+    """
+    o = orden_despachada("T-PAG-4")
+    nunca_llego = next(i for i in o["items"] if i["cantidad_aceptada"] == 0)
+    r = client.post(
+        f"/v1/farmacia/pedidos/{o['id']}/no-aceptar",
+        json={
+            "alcance": "no_aceptada_parcial",
+            "items": [{"item_id": nunca_llego["id"], "cantidad": 1}],
+        },
+        headers=headers_farmacia1,
+    )
+    assert r.status_code == 422, r.text
+    assert "cantidad_invalida" in r.text
+
+
+def test_el_proveedor_ve_el_monto_devuelto(
+    client, headers_farmacia1, headers_proveedor1, orden_despachada
+):
+    """El distribuidor tiene que ver las dos cifras: lo que facturó y lo que cobrará."""
+    o = orden_despachada("T-PAG-5")
+    item = o["items"][0]
+    client.post(
+        f"/v1/farmacia/pedidos/{o['id']}/no-aceptar",
+        json={"alcance": "no_aceptada_parcial", "items": [{"item_id": item["id"], "cantidad": 2}]},
+        headers=headers_farmacia1,
+    )
+    vista = client.get(f"/v1/ordenes/{o['id']}", headers=headers_proveedor1)
+    assert vista.status_code == 200, vista.text
+    d = vista.json()["data"]
+    assert d["total"] == 15000
+    assert d["valor_no_aceptado"] == 2000
+    assert d["total_a_pagar"] == 13000
+
+
+def test_la_comision_no_se_mueve_con_un_rechazo(
+    client, headers_farmacia1, headers_admin, orden_despachada
+):
+    """Regresión: registrar una devolución no puede alterar las ganancias."""
+    antes = client.get("/v1/admin/ganancias", headers=headers_admin)
+    assert antes.status_code == 200, antes.text
+    gmv_antes = antes.json()["data"]["gmv_mes"]
+
+    o = orden_despachada("T-PAG-6")
+    client.post(f"/v1/farmacia/pedidos/{o['id']}/recibir", headers=headers_farmacia1)
+    tras_conforme = client.get("/v1/admin/ganancias", headers=headers_admin).json()["data"]
+
+    r = client.post(
+        f"/v1/farmacia/pedidos/{o['id']}/no-aceptar",
+        json={"alcance": "no_aceptada_total"},
+        headers=headers_farmacia1,
+    )
+    assert r.status_code == 409, r.text  # ya se registró: inmutable
+
+    despues = client.get("/v1/admin/ganancias", headers=headers_admin).json()["data"]
+    assert despues["gmv_mes"] == tras_conforme["gmv_mes"]
+    assert despues["ganancia_mes"] == pytest.approx(
+        despues["gmv_mes"] * despues["comision_pct"], rel=1e-3
+    )
+    # La orden nueva suma al GMV como cualquier venta; lo que no puede es restar.
+    assert despues["gmv_mes"] >= gmv_antes
