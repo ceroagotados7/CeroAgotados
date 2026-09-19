@@ -432,7 +432,15 @@ export default function OrdenDetallePage({ params }: { params: Promise<{ id: str
             <Badge tone={etiquetaOrden(orden.estado, orden.recepcion).tone}>
               {etiquetaOrden(orden.estado, orden.recepcion).label}
             </Badge>
-            <span>Total {cop(orden.total)}</span>
+            {/* Con devolución, un "Total" a secas se lee como lo que se va a
+                cobrar, y no lo es. Se nombra lo facturado y se añade el neto. */}
+            {orden.valor_no_aceptado > 0 ? (
+              <span>
+                Facturado {cop(orden.total)} · <b className="text-amber-700">cobrará {cop(orden.total_a_pagar)}</b>
+              </span>
+            ) : (
+              <span>Total {cop(orden.total)}</span>
+            )}
           </div>
         )}
       </div>
